@@ -24,7 +24,7 @@ bun test tests-contract/
 
 This runs health checks, tool manifest inspection, and read-only list commands (kompositions, library, jobs, outputs). No data is created or modified.
 
-Tests that require auth are automatically **skipped** when no token store is detected — the suite will never fail because of missing credentials.
+Tests that require auth are automatically **skipped** when no valid token store is detected — the suite will never fail because of missing credentials. PKCE browser login is a prerequisite rather than an automated test step; CI receives its already-authenticated test store through a repository secret.
 
 ### Mutating tier (creates real data)
 

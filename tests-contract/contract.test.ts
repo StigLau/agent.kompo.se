@@ -236,7 +236,7 @@ describe('Contract tests (test env)', () => {
   const describeMutating = MUTATING && AUTH.hasAuth ? describe : describe.skip;
 
   describeMutating('Upload & analyze (mutating)', () => {
-    const tmpDir = path.join(os.tmpdir(), `kompo-contract-test-${Date.now()}`);
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'kompo-contract-test-'));
     const wavPath = path.join(tmpDir, 'silence.wav');
 
     beforeAll(() => {
@@ -262,7 +262,7 @@ describe('Contract tests (test env)', () => {
       expect(fileId).toBeTruthy();
       const promoted = kli(['--env', 'test', `promote/${fileId}`]);
       expect(promoted.exitCode).toBe(0);
-      expect(promoted.stdout + '\\n' + promoted.stderr).toMatch(/success:\s*true/i);
+      expect(promoted.stdout + '\n' + promoted.stderr).toMatch(/success:\s*true/i);
     });
   });
 
