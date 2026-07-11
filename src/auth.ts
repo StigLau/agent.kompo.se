@@ -189,7 +189,16 @@ function authFilePath(env: string): string {
 function saveJsonSecure(filePath: string, data: unknown): void {
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+  fs.chmodSync(dir, 0o700);
+
+  // Never follow a pre-existing symlink when writing credentials.
+  if (fs.existsSync(filePath) && fs.lstatSync(filePath).isSymbolicLink()) {
+    throw new Error(`Refusing to write credentials through symlink: ${filePath}`);
+  }
+
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), { mode: 0o600 });
+  // The mode option only applies to new files; enforce it for existing files too.
+  fs.chmodSync(filePath, 0o600);
 }
 
 function loadJsonIfExists(filePath: string): any | null {
