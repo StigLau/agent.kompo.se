@@ -6,9 +6,28 @@ import { describe, test, expect } from 'bun:test';
 import {
   renderAgentContext,
   parseKnowledgeYaml,
+  countToolsOperations,
   KNOWLEDGE_MANIFEST_URL,
 } from '../src/commands/init';
 import type { AgentContextInput, KnowledgeUnit } from '../src/commands/init';
+
+// ---------------------------------------------------------------------------
+// countToolsOperations
+// ---------------------------------------------------------------------------
+
+describe('countToolsOperations', () => {
+  test('counts HTTP methods rather than paths', () => {
+    expect(countToolsOperations({
+      '/items': { get: {}, post: {}, parameters: [] },
+      '/items/{id}': { get: {}, delete: {} },
+    })).toBe(4);
+  });
+
+  test('handles malformed input', () => {
+    expect(countToolsOperations(null)).toBe(0);
+    expect(countToolsOperations({ '/health': { summary: 'not an operation' } })).toBe(0);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // parseKnowledgeYaml

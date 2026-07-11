@@ -25,6 +25,16 @@ export interface KnowledgeUnit {
   intent?: string;
 }
 
+/** Count HTTP operations in an OpenAPI-style paths object. */
+export function countToolsOperations(paths: unknown): number {
+  if (!paths || typeof paths !== 'object') return 0;
+  const methods = new Set(['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace']);
+  return Object.values(paths as Record<string, unknown>).reduce((count, pathItem) => {
+    if (!pathItem || typeof pathItem !== 'object') return count;
+    return count + Object.keys(pathItem).filter(key => methods.has(key.toLowerCase())).length;
+  }, 0);
+}
+
 /**
  * Parse a knowledge.yaml string into a list of {id, intent?} objects.
  * Uses light line-by-line regex parsing — no YAML dependency.
@@ -211,7 +221,7 @@ export async function handleInit(
     const result = await fetchToolsWithFallback(apiUrl, env);
     // Count operations — paths in the manifest
     const paths = result.data?.paths ?? {};
-    toolsCount = Object.keys(paths).length;
+    toolsCount = countToolsOperations(paths);
     process.stderr.write(`[kli init] Tools manifest: ${toolsCount} operations\n`);
   } catch (err: any) {
     warnings.push(`Tools manifest fetch failed: ${err.message}`);
