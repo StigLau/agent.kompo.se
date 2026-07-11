@@ -72,10 +72,14 @@ function detectAuth(): AuthInfo {
   } catch {
     // Missing or malformed stores remain unauthenticated.
   }
+  let hasAuth = hasTokens && !expired;
+  if (hasTokens && expired && refreshable) {
+    // Verify refreshability before enabling authenticated tests. This avoids
+    // turning an invalid refresh token into four misleading failures.
+    hasAuth = kli(['--env', 'test', 'auth/refresh']).exitCode === 0;
+  }
   return {
-    // The CLI refreshes expired tokens itself; let refreshable stores exercise
-    // authenticated contracts instead of silently skipping after token expiry.
-    hasAuth: hasTokens && (!expired || refreshable),
+    hasAuth,
     email: emailMatch?.[1]?.trim() || '',
     sourceLine: sourceLineMatch?.[1]?.trim() || '',
     expired,
