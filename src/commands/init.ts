@@ -29,7 +29,7 @@ export interface KnowledgeUnit {
 export function countToolsOperations(paths: unknown): number {
   if (!paths || typeof paths !== 'object') return 0;
   const methods = new Set(['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace']);
-  return Object.values(paths as Record<string, unknown>).reduce((count, pathItem) => {
+  return Object.values(paths as Record<string, unknown>).reduce<number>((count, pathItem) => {
     if (!pathItem || typeof pathItem !== 'object') return count;
     return count + Object.keys(pathItem).filter(key => methods.has(key.toLowerCase())).length;
   }, 0);
