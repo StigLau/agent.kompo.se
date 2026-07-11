@@ -50,7 +50,7 @@ function kli(
 // ---------------------------------------------------------------------------
 
 interface AuthInfo {
-  /** True when a user auth file exists and is usable or refreshable. */
+  /** True when a user auth file exists and the token is not expired. */
   hasAuth: boolean;
   email: string;
   sourceLine: string;
@@ -64,22 +64,8 @@ function detectAuth(): AuthInfo {
   const expired = combined.includes('EXPIRED');
   const emailMatch = combined.match(/identity:\s*(.+)/);
   const sourceLineMatch = combined.match(/(source:.*)/);
-  let refreshable = false;
-  try {
-    const authPath = path.join(os.homedir(), '.kompo', 'auth-test.json');
-    const stored = JSON.parse(fs.readFileSync(authPath, 'utf8')) as { refreshToken?: string };
-    refreshable = typeof stored.refreshToken === 'string' && stored.refreshToken.length > 0;
-  } catch {
-    // Missing or malformed stores remain unauthenticated.
-  }
-  let hasAuth = hasTokens && !expired;
-  if (hasTokens && expired && refreshable) {
-    // Verify refreshability before enabling authenticated tests. This avoids
-    // turning an invalid refresh token into four misleading failures.
-    hasAuth = kli(['--env', 'test', 'auth/refresh']).exitCode === 0;
-  }
   return {
-    hasAuth,
+    hasAuth: hasTokens && !expired,
     email: emailMatch?.[1]?.trim() || '',
     sourceLine: sourceLineMatch?.[1]?.trim() || '',
     expired,
@@ -87,6 +73,8 @@ function detectAuth(): AuthInfo {
 }
 
 const AUTH = detectAuth();
+const FULL = process.env.KOMPO_CONTRACT_FULL === '1';
+const FULL_FIXTURE = process.env.KOMPO_CONTRACT_KOMPOSITION_FILE;
 
 // ---------------------------------------------------------------------------
 // WAV generation (pure Bun — no dependencies)
@@ -195,6 +183,14 @@ describe('Contract tests (test env)', () => {
 
   const describeAuth = AUTH.hasAuth ? describe : describe.skip;
 
+  if (FULL && (!AUTH.hasAuth || !FULL_FIXTURE)) {
+    test('full contract gate has usable auth and a fixture', () => {
+      throw new Error(
+        'KOMPO_CONTRACT_FULL=1 requires a non-expired test auth store and KOMPO_CONTRACT_KOMPOSITION_FILE',
+      );
+    });
+  }
+
   describeAuth('Kompositions', () => {
     test('lists kompositions', () => {
       const { exitCode, stdout } = kli(['--env', 'test', 'kompositions']);
@@ -273,8 +269,6 @@ describe('Contract tests (test env)', () => {
   // Full build/download is deliberately opt-in because it consumes render
   // compute. The caller supplies a valid .v3.kompo.md fixture that references
   // the account's promoted Kilde.
-  const FULL = process.env.KOMPO_CONTRACT_FULL === '1';
-  const FULL_FIXTURE = process.env.KOMPO_CONTRACT_KOMPOSITION_FILE;
   const describeFull = FULL && MUTATING && AUTH.hasAuth && FULL_FIXTURE ? describe : describe.skip;
 
   describeFull('Compose, build, poll, and download (mutating)', () => {
