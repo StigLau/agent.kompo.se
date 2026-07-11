@@ -1,0 +1,289 @@
+kcp_version: "0.21"
+project: kompo.ai
+version: 1.0.0
+updated: 2026-07-11
+links:
+  web_manifest: /knowledge.yaml
+
+# Kompo.ai public KCP manifest — curated API-workflow units for external LLM agents.
+#
+# This manifest describes the public API surface of kompo.ai for agents working
+# through the @kompo/kli CLI in end-user project directories. It covers the six
+# core flows: bootstrap/discovery, auth, upload, analyze+tag kilder, compose
+# komposition, and build+poll+download.
+#
+# Internal units (deployment, testing, skills, infrastructure, observability,
+# architecture internals, crew/ACL, komposteur, MIR pipeline) are excluded.
+
+discovery:
+  source: manual
+  verification_status: declared
+  confidence: 0.85
+
+units:
+  # ── Global: what kompo.ai is and how to get started ──────────────────────
+
+  - id: service-overview
+    path: docs/kcp/service-overview.md
+    intent: "What is kompo.ai and what six workflows does it support?"
+    scope: global
+    audience: [human, agent]
+    validated: 2026-07-11
+    discovery:
+      verification_status: verified
+      confidence: 0.9
+    triggers:
+      - "what is kompo.ai"
+      - "what can kompo.ai do"
+      - "how does kompo.ai work"
+      - "what workflows are supported"
+      - "give me an overview of this service"
+
+  - id: authentication
+    path: docs/kcp/authentication.md
+    intent: "How do I obtain a JWT bearer token via kli auth/url and kli auth/complete (PKCE) to authenticate API calls?"
+    scope: global
+    audience: [agent, developer]
+    validated: 2026-07-11
+    discovery:
+      verification_status: verified
+      confidence: 0.95
+    triggers:
+      - "how do I log in"
+      - "how do I get a JWT token"
+      - "how do I authenticate API calls"
+      - "what is the auth flow"
+      - "how does kli auth work"
+      - "what is PKCE paste-back"
+
+  - id: tools-manifest
+    path: docs/kcp/tools-manifest.md
+    intent: "What are the exact callable operations, their HTTP methods, paths, and input schemas?"
+    scope: global
+    audience: [agent]
+    validated: 2026-07-11
+    depends_on: [authentication]
+    discovery:
+      verification_status: declared
+      confidence: 0.8
+    triggers:
+      - "what API endpoints are available"
+      - "what operations can I call"
+      - "give me the typed input schemas"
+      - "what tools does kompo.ai expose"
+      - "where is the MCP tool manifest"
+
+  - id: content-negotiation
+    path: docs/kcp/content-negotiation.md
+    intent: "How do I get LLM-optimized markdown responses instead of JSON?"
+    scope: global
+    audience: [agent, developer]
+    validated: 2026-07-11
+    triggers:
+      - "how do I get markdown responses"
+      - "how do I use Accept text/markdown"
+      - "how do I reduce token usage from API responses"
+      - "what is content negotiation"
+
+  # ── API workflows: the public interface ──────────────────────────────────
+
+  - id: chat-workflow
+    path: docs/kcp/chat-workflow.md
+    intent: "How do I send a natural language message to the AI assistant to create content, generate images, or discuss kompositions?"
+    scope: module
+    audience: [agent, developer]
+    validated: 2026-07-11
+    depends_on: [authentication, content-negotiation]
+    triggers:
+      - "how do I chat with the AI assistant"
+      - "how do I ask the AI to generate something"
+      - "how do I use the chat endpoint"
+      - "how do I trigger multi-step workflows via natural language"
+
+  - id: kompositions-workflow
+    path: docs/kcp/kompositions-workflow.md
+    intent: "How do I create, read, update and delete komposition projects (markdown documents that describe a music video)?"
+    scope: module
+    audience: [agent, developer]
+    validated: 2026-07-11
+    depends_on: [authentication]
+    triggers:
+      - "how do I create a komposition"
+      - "how do I list my video projects"
+      - "how do I update a komposition"
+      - "how do I manage video project documents"
+      - "what is the CRUD API for kompositions"
+
+  - id: sources-workflow
+    path: docs/kcp/sources-workflow.md
+    intent: "How do I manage kilder — reusable multimedia source assets (audio tracks, video clips, image sources) with segment definitions and file-location fallback chains?"
+    scope: module
+    audience: [agent, developer]
+    validated: 2026-07-11
+    depends_on: [authentication, file-management]
+    triggers:
+      - "how do I manage audio tracks"
+      - "how do I define video clip segments"
+      - "how do I create reusable media sources"
+      - "what are kilder"
+      - "how do I create a kilde"
+      - "how do sources work in kompo.ai"
+
+  - id: file-management
+    path: docs/kcp/file-management.md
+    intent: "How do I upload files to the media library via presigned URLs, list them, search, and delete them?"
+    scope: module
+    audience: [agent, developer]
+    validated: 2026-07-11
+    depends_on: [authentication]
+    triggers:
+      - "how do I upload a file"
+      - "how do I list my media files"
+      - "how do I get a presigned upload URL"
+      - "how do I manage my media library"
+
+  - id: multimedia-generation
+    path: docs/kcp/multimedia-generation.md
+    intent: "How do I generate AI images, list the staging area, and promote generated files to the permanent library?"
+    scope: module
+    audience: [agent, developer]
+    validated: 2026-07-11
+    depends_on: [authentication]
+    discovery:
+      verification_status: verified
+      confidence: 0.85
+    triggers:
+      - "how do I generate an AI image"
+      - "how do I promote a staged file to the library"
+      - "what is the staging area"
+      - "how do I use the generate-image endpoint"
+      - "how do I generate content with Gemini"
+
+  - id: video-build-workflow
+    path: docs/kcp/video-build-workflow.md
+    intent: "How do I submit a komposition for video rendering — via the legacy endpoint or the unified jobs API?"
+    scope: module
+    audience: [agent, developer]
+    validated: 2026-07-11
+    depends_on: [kompositions-workflow, authentication]
+    discovery:
+      verification_status: verified
+      confidence: 0.9
+    triggers:
+      - "how do I render a video"
+      - "how do I submit a video build job"
+      - "how do I trigger ffmpeg rendering"
+      - "how do I start a video build"
+
+  - id: job-monitoring
+    path: docs/kcp/job-monitoring.md
+    intent: "How do I poll a video render job's status (PENDING → RUNNING → SUCCEEDED/FAILED) and get download URLs when it finishes?"
+    scope: module
+    audience: [agent, developer]
+    validated: 2026-07-11
+    depends_on: [video-build-workflow]
+    discovery:
+      verification_status: verified
+      confidence: 0.9
+    triggers:
+      - "how do I check if my video job is done"
+      - "how do I poll job status"
+      - "how do I get the output URL after rendering"
+      - "what does job status SUCCEEDED mean"
+
+  - id: outputs-workflow
+    path: docs/kcp/outputs-workflow.md
+    intent: "How do I list all finished video outputs across all kompositions and get their download URLs?"
+    scope: module
+    audience: [agent, developer]
+    validated: 2026-07-11
+    depends_on: [job-monitoring]
+    triggers:
+      - "how do I list my finished videos"
+      - "how do I download a rendered video"
+      - "where are my completed video outputs"
+
+  # ── Komposition format specs: the wire contract agents must emit ─────────
+
+  - id: komposition-format
+    path: docs/kcp/komposition-format.md
+    intent: "What is the exact markdown structure for a build-ready komposition (V1/V2) with metadata, BPM, beat timings, and kilde references?"
+    scope: module
+    audience: [agent, developer]
+    validated: 2026-07-11
+    depends_on: [kompositions-workflow, file-management]
+    discovery:
+      verification_status: declared
+      confidence: 0.85
+    triggers:
+      - "what is the komposition markdown format"
+      - "how do I write a build-ready komposition"
+      - "what is the structure of a komposition"
+      - "how do I define tracks and visuals in a komposition"
+      - "what fields are required in a komposition"
+      - "how do I set BPM and beat timings"
+
+  - id: komposition-v3
+    path: docs/kcp/komposition-v3.md
+    intent: "What is the KompoStrict V3 layered format with z-ordered layers, blend modes, and alpha_over compositing?"
+    scope: module
+    audience: [agent, developer]
+    validated: 2026-07-11
+    depends_on: [komposition-format]
+    triggers:
+      - "how does V3 komposition work"
+      - "what are z-ordered layers"
+      - "how do I use alpha_over compositing"
+      - "what is the difference between V1 and V3"
+      - "how do I write a V3 komposition"
+      - "what are blend modes in kompo V3"
+
+relationships:
+  - from: authentication
+    to: chat-workflow
+    type: enables
+  - from: authentication
+    to: kompositions-workflow
+    type: enables
+  - from: authentication
+    to: file-management
+    type: enables
+  - from: authentication
+    to: multimedia-generation
+    type: enables
+  - from: authentication
+    to: outputs-workflow
+    type: enables
+  - from: kompositions-workflow
+    to: video-build-workflow
+    type: enables
+  - from: file-management
+    to: sources-workflow
+    type: enables
+  - from: multimedia-generation
+    to: file-management
+    type: context
+  - from: video-build-workflow
+    to: job-monitoring
+    type: enables
+  - from: job-monitoring
+    to: outputs-workflow
+    type: enables
+  - from: chat-workflow
+    to: kompositions-workflow
+    type: context
+  - from: chat-workflow
+    to: multimedia-generation
+    type: context
+  - from: service-overview
+    to: tools-manifest
+    type: context
+  - from: content-negotiation
+    to: chat-workflow
+    type: context
+  - from: komposition-format
+    to: kompositions-workflow
+    type: enables
+  - from: komposition-format
+    to: video-build-workflow
+    type: enables
