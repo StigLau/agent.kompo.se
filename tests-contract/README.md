@@ -39,6 +39,11 @@ For the complete compose → build → poll → stream flow, additionally set
 `.v3.kompo.md` fixture that references the account's promoted Kilde. This tier is
 not run by default because it consumes render compute.
 
+CI runs the full gate when the repository secrets `KOMPO_TEST_AUTH_JSON` (the
+contents of the test auth store) and `KOMPO_TEST_KOMPOSITION` (a valid fixture)
+are configured. These secrets are written only to the runner and are never
+committed or printed.
+
 Mutating tests are skipped by default — they only run when the `KOMPO_CONTRACT_MUTATING=1` environment variable is explicitly set.
 
 ## Isolation from unit tests

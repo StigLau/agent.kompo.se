@@ -26,5 +26,28 @@ jobs:
       - name: Run unit tests
         run: bun test tests/
 
-      - name: Run deployed contract tests
+      # Optional secrets enable the destructive compatibility gate. Without
+      # them CI still runs the safe public/read-only contract tier.
+      - name: Install private contract fixtures
+        if: ${{ secrets.KOMPO_TEST_AUTH_JSON != '' && secrets.KOMPO_TEST_KOMPOSITION != '' }}
+        env:
+          KOMPO_TEST_AUTH_JSON: ${{ secrets.KOMPO_TEST_AUTH_JSON }}
+          KOMPO_TEST_KOMPOSITION: ${{ secrets.KOMPO_TEST_KOMPOSITION }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.kompo"
+          printf '%s' "$KOMPO_TEST_AUTH_JSON" > "$HOME/.kompo/auth-test.json"
+          printf '%s' "$KOMPO_TEST_KOMPOSITION" > "$RUNNER_TEMP/komposition.v3.kompo.md"
+          chmod 600 "$HOME/.kompo/auth-test.json"
+
+      - name: Run deployed contract tests (read-only)
+        if: ${{ secrets.KOMPO_TEST_AUTH_JSON == '' || secrets.KOMPO_TEST_KOMPOSITION == '' }}
+        run: bun run test:contract
+
+      - name: Run deployed contract tests (full compatibility gate)
+        if: ${{ secrets.KOMPO_TEST_AUTH_JSON != '' && secrets.KOMPO_TEST_KOMPOSITION != '' }}
+        env:
+          KOMPO_CONTRACT_MUTATING: '1'
+          KOMPO_CONTRACT_FULL: '1'
+          KOMPO_CONTRACT_KOMPOSITION_FILE: ${{ runner.temp }}/komposition.v3.kompo.md
         run: bun run test:contract
