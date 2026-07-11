@@ -6,25 +6,31 @@
 // Environment → API URL mapping
 // ---------------------------------------------------------------------------
 
-const ENV_DEFAULTS: Record<string, string> = {
+export const ENV_DEFAULTS: Record<string, string> = {
   test: 'https://api.test.ai.makeshitapp.com',
   prod: 'https://api.ai.makeshitapp.com',
   'sandbox-use2': 'https://use2.sandbox.makeshitapp.com',
   'sandbox-eun1': 'https://eun1.sandbox.makeshitapp.com',
 };
 
+const KNOWN_ENVS = Object.keys(ENV_DEFAULTS);
+
+/**
+ * Validate an environment name. Returns an error message string if invalid,
+ * or null if valid.
+ */
+export function validateEnv(env: string): string | null {
+  if (!KNOWN_ENVS.includes(env)) {
+    return `Unknown env '${env}' — expected one of: ${KNOWN_ENVS.join(', ')}`;
+  }
+  return null;
+}
+
 /**
  * Resolve the API base URL for a given environment name.
  */
 export function resolveApiUrl(env: string): string {
   return ENV_DEFAULTS[env] ?? `https://api.${env}.ai.makeshitapp.com`;
-}
-
-/**
- * Is the value likely an API Gateway or api.* URL?
- */
-export function isLikelyApiUrl(value: string): boolean {
-  return value.includes('execute-api.') || value.includes('://api.');
 }
 
 // ---------------------------------------------------------------------------

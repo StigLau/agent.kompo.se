@@ -4,7 +4,7 @@
 
 import { describe, test, expect } from 'bun:test';
 import { parseArgs } from '../src/cli';
-import { resolveApiUrl } from '../src/api';
+import { resolveApiUrl, validateEnv } from '../src/api';
 import { resolveFrontendOriginForAuth } from '../src/auth';
 
 // ---------------------------------------------------------------------------
@@ -91,6 +91,36 @@ describe('resolveApiUrl', () => {
   test('unknown env falls back to pattern', () => {
     const url = resolveApiUrl('custom-env');
     expect(url).toContain('api.custom-env.ai.makeshitapp.com');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateEnv
+// ---------------------------------------------------------------------------
+
+describe('validateEnv', () => {
+  test('all four known envs are accepted', () => {
+    expect(validateEnv('prod')).toBeNull();
+    expect(validateEnv('test')).toBeNull();
+    expect(validateEnv('sandbox-use2')).toBeNull();
+    expect(validateEnv('sandbox-eun1')).toBeNull();
+  });
+
+  test('unknown env returns error message', () => {
+    const err = validateEnv('bogus');
+    expect(err).not.toBeNull();
+    expect(err!).toContain("Unknown env 'bogus'");
+    expect(err!).toContain('expected one of:');
+    expect(err!).toContain('prod');
+    expect(err!).toContain('test');
+    expect(err!).toContain('sandbox-use2');
+    expect(err!).toContain('sandbox-eun1');
+  });
+
+  test('empty string is rejected', () => {
+    const err = validateEnv('');
+    expect(err).not.toBeNull();
+    expect(err!).toContain("Unknown env ''");
   });
 });
 

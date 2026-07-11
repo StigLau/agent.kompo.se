@@ -8,7 +8,7 @@
  */
 
 import * as path from 'path';
-import { resolveApiUrl } from './api';
+import { resolveApiUrl, validateEnv } from './api';
 import { getToken } from './auth';
 
 // ---------------------------------------------------------------------------
@@ -117,6 +117,13 @@ async function main() {
   }
 
   const { env, command, cmdArgs } = parseArgs(rawArgs);
+
+  // Validate env against known environments
+  const envError = validateEnv(env);
+  if (envError) {
+    console.error(envError);
+    process.exit(1);
+  }
 
   if (!command) {
     console.log(HELP_TEXT);
@@ -320,7 +327,7 @@ async function main() {
     await handleIncidentReplay(packageDir);
   } else if (command.startsWith('upload-analyze')) {
     const { handleUploadAnalyze } = await import('./commands/media');
-    const filePath = cmdArgs[0] ?? command.split(' ').slice(1).join(' ').trim();
+    const filePath = cmdArgs[0];
     if (!filePath) {
       console.error('Usage: kli upload-analyze <path-to-audio-file>');
       process.exit(1);
