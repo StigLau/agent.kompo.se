@@ -62,7 +62,6 @@ units:
     scope: global
     audience: [agent]
     validated: 2026-07-11
-    depends_on: [authentication]
     discovery:
       verification_status: declared
       confidence: 0.8

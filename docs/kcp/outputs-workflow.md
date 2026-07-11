@@ -43,7 +43,7 @@ curl -H "Authorization: Bearer <token>" https://api.ai.makeshitapp.com/api/outpu
 
 ## Also see
 
-- [job-monitoring](#job-monitoring) — for per-job output URLs (available immediately
+- [job-monitoring](job-monitoring.md) — for per-job output URLs (available immediately
   when a job reaches `SUCCEEDED`).
 
 `GET /api/outputs` is the canonical endpoint for listing all finished videos across

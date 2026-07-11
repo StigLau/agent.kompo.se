@@ -87,7 +87,7 @@ Content-Type: application/json
 ```
 
 Downloads a YouTube video and adds it to your library. Poll status via
-[job-monitoring](#job-monitoring).
+[job-monitoring](job-monitoring.md).
 
 ### Unified jobs API — video build (preferred)
 
@@ -127,4 +127,4 @@ komposition content (same markdown, same viewport) again, you get back the exist
 
 ## Next step
 
-After submitting a build, poll the job status. See [job-monitoring](#job-monitoring).
+After submitting a build, poll the job status. See [job-monitoring](job-monitoring.md).

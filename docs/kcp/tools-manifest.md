@@ -13,8 +13,8 @@ Agents should
 fetch this to build a complete, typed picture of available operations without needing
 to scrape documentation.
 
-All authenticated endpoints in the tools manifest require an `Authorization: Bearer <token>`
-header (see [authentication](#authentication)).
+No authentication required — this endpoint exists for bootstrap discovery. All other API
+endpoints require an `Authorization: Bearer <token>` header (see [authentication](authentication.md)).
 
 ## Key endpoint groups
 
