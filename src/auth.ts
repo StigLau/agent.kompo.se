@@ -323,7 +323,7 @@ export async function cmdAuthComplete(env: string, input: string | undefined): P
   if (!resp.ok) {
     const body = await resp.text();
     deleteFileIfExists(pkceFile);
-    console.error(`Token exchange failed (HTTP ${resp.status}): ${body}`);
+    console.error(`Token exchange failed (HTTP ${resp.status}): ${body.slice(0, 200)}`);
     process.exit(1);
   }
 
@@ -380,7 +380,7 @@ export async function cmdAuthRefresh(env: string): Promise<string> {
 
   if (!resp.ok) {
     const body = await resp.text();
-    throw new Error(`Token refresh failed (HTTP ${resp.status}): ${body}`);
+    throw new Error(`Token refresh failed (HTTP ${resp.status}): ${body.slice(0, 200)}`);
   }
 
   const data = (await resp.json()) as {

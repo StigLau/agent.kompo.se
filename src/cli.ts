@@ -50,8 +50,8 @@ Commands:
 
   Project:
     init                     Bootstrap agent context — fetches discovery surface and writes AGENTS.md
-                                 Fails closed if discovery is incomplete. Use --allow-partial to
-                                 write a clearly-marked partial context instead.
+                             Fails closed if discovery is incomplete. Use --allow-partial to
+                             write a clearly-marked partial context instead.
 
   Auth:
     auth/url                 Generate a PKCE login URL (entry point for first-time users)
