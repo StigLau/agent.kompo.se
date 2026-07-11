@@ -14,6 +14,73 @@ Your agent authenticates against the kompo.ai service (your persisted kompositio
 6. **Build** — render the video (async), poll, preview, iterate
 7. **Download** — fetch the finished production
 
+## Quickstart
+
+### Install
+
+The `@kompo/kli` npm package is not yet published. Clone and install locally:
+
+```bash
+git clone https://github.com/StigLau/agent.kompo.se.git
+cd agent.kompo.se
+bun install
+```
+
+Bun is the only supported runtime. The CLI entry point is `src/cli.ts` — run it directly with `bun src/cli.ts <command>`. (When published, the binary name will be `kli`.)
+
+### First commands (no login needed)
+
+```bash
+bun src/cli.ts help              # Full command reference
+bun src/cli.ts --env test health # Check service health
+bun src/cli.ts init              # Fetch discovery surface, write AGENTS.md
+```
+
+`kli init` fetches the knowledge manifest and the API tools manifest, checks auth status, and writes an agent-readable `AGENTS.md` project context file in the current directory. If any discovery step fails — the tools manifest, the knowledge manifest, or a manifest with 0 units — `kli init` exits non-zero and writes no file; pass `--allow-partial` to write the context file anyway with a prominent warning banner marking it incomplete.
+
+### Environments
+
+Use `--env` to target a deployment. The default is `prod`. The `KOMPO_ENV` environment variable overrides the default; the `--env` flag overrides both.
+
+| Env | API base URL |
+|-----|-------------|
+| `prod` | `https://ai.makeshitapp.com` |
+| `test` | `https://api.test.ai.makeshitapp.com` |
+| `sandbox-use2` | `https://use2.sandbox.makeshitapp.com` |
+| `sandbox-eun1` | `https://eun1.sandbox.makeshitapp.com` |
+
+### Login
+
+KLI uses a PKCE paste-back login flow — open a browser, log in, paste the callback URL back into the terminal:
+
+```bash
+bun src/cli.ts auth/url                         # Print a login URL
+# Open the URL in a browser and log in.
+# After login, copy the full address-bar URL.
+bun src/cli.ts auth/complete "<callback-url>"   # Paste the callback URL
+```
+
+Tokens are stored in `~/.kompo/auth-<env>.json` with permission `0600`. Run `bun src/cli.ts auth/status` to check current login state and token expiry.
+
+### Testing
+
+**Unit tests:**
+
+```bash
+bun test tests/
+```
+
+**Contract tests** exercise the real CLI against the deployed test environment:
+
+```bash
+bun run contract:public  # No credentials required — health, tools, env checks
+bun run contract:auth    # Authenticated gate — refuses to pass without valid tokens
+```
+
+`contract:auth` requires a valid token store at `~/.kompo/auth-test.json` (created by `auth/url` + `auth/complete` with `--env test`). Both suites target the `test` environment.
+
+Run all contract tests with `bun run test:contract`.
+
 ## Status
 
 Early scaffold. Vision and roadmap: [issue #1](https://github.com/StigLau/agent.kompo.se/issues/1).
