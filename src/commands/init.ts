@@ -13,9 +13,8 @@ import { getAuthStatus } from '../auth';
 // Constants
 // ---------------------------------------------------------------------------
 
-/** Public KCP manifest URL — will move to https://agent.kompo.se/knowledge.yaml once GitHub Pages is live. */
-export const KNOWLEDGE_MANIFEST_URL =
-  'https://raw.githubusercontent.com/StigLau/agent.kompo.se/main/knowledge.yaml';
+/** Public KCP manifest served by the project's discovery host. */
+export const KNOWLEDGE_MANIFEST_URL = 'https://agent.kompo.se/knowledge.yaml';
 
 // ---------------------------------------------------------------------------
 // Light YAML parser (zero runtime deps — no YAML library)
@@ -270,11 +269,17 @@ export async function handleInit(
   }
 
   // Step 4: Write AGENTS.md
-  const { existsSync, lstatSync } = await import('fs');
+  const { lstatSync, unlinkSync, renameSync, writeFileSync } = await import('fs');
   const cwd = process.cwd();
   const agentsPath = `${cwd}/AGENTS.md`;
+  let existingFile = false;
+  try {
+    existingFile = lstatSync(agentsPath).isFile();
+  } catch (err: any) {
+    if (err?.code !== 'ENOENT') throw err;
+  }
 
-  if (existsSync(agentsPath) && !force) {
+  if (existingFile && !force) {
     console.log('');
     console.log('⚠  AGENTS.md already exists. Use --force to overwrite.');
     console.log('');
@@ -295,14 +300,24 @@ export async function handleInit(
     generatedAt: new Date().toISOString(),
   });
 
-  // Symlink guard: refuse to write through a symlink (e.g. AGENTS.md → ~/.bashrc)
-  if (existsSync(agentsPath) && lstatSync(agentsPath).isSymbolicLink()) {
-    console.error('Refusing to write through symlink: AGENTS.md');
-    process.exit(1);
+  // Symlink guard: refuse to write through a symlink (including dangling
+  // links). The temporary-file + rename sequence also never follows a link.
+  try {
+    if (lstatSync(agentsPath).isSymbolicLink()) {
+      console.error('Refusing to write through symlink: AGENTS.md');
+      process.exit(1);
+    }
+  } catch (err: any) {
+    if (err?.code !== 'ENOENT') throw err;
   }
 
-  const { writeFileSync } = await import('fs');
-  writeFileSync(agentsPath, content, 'utf-8');
+  const tempPath = `${agentsPath}.tmp-${process.pid}-${Date.now()}`;
+  try {
+    writeFileSync(tempPath, content, { encoding: 'utf-8', mode: 0o644, flag: 'wx' });
+    renameSync(tempPath, agentsPath);
+  } finally {
+    try { unlinkSync(tempPath); } catch {}
+  }
 
   console.log('');
   console.log(`✅ AGENTS.md written to ${agentsPath}`);
