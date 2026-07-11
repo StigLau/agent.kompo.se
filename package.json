@@ -8,7 +8,8 @@
     "kli": "src/cli.ts"
   },
   "scripts": {
-    "test": "bun test tests/"
+    "test": "bun test tests/",
+    "test:contract": "bun test tests-contract/"
   },
   "devDependencies": {
     "@types/bun": "latest"
