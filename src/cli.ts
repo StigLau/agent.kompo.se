@@ -48,6 +48,9 @@ Environment:
 
 Commands:
 
+  Project:
+    init                     Bootstrap agent context — fetches discovery surface and writes AGENTS.md
+
   Auth:
     auth/url                 Generate a PKCE login URL (entry point for first-time users)
     auth/complete <url>      Complete login by pasting the full callback URL
@@ -193,6 +196,12 @@ async function main() {
   // -----------------------------------------------------------------------
   // Public commands (no token required)
   // -----------------------------------------------------------------------
+  if (command === 'init') {
+    const { handleInit } = await import('./commands/init');
+    const force = cmdArgs.includes('--force');
+    await handleInit(env, apiUrl, force);
+    return;
+  }
   if (command === 'health') {
     const { handleHealth } = await import('./commands/system');
     await handleHealth(env, apiUrl);
@@ -200,7 +209,7 @@ async function main() {
   }
   if (command === 'tools') {
     const { handleTools } = await import('./commands/system');
-    await handleTools(apiUrl);
+    await handleTools(env, apiUrl);
     return;
   }
   if (command === 'incident-download') {

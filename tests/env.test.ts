@@ -73,7 +73,7 @@ describe('parseArgs', () => {
 
 describe('resolveApiUrl', () => {
   test('prod', () => {
-    expect(resolveApiUrl('prod')).toBe('https://api.ai.makeshitapp.com');
+    expect(resolveApiUrl('prod')).toBe('https://ai.makeshitapp.com');
   });
 
   test('test', () => {

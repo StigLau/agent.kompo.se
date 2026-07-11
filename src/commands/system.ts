@@ -2,7 +2,7 @@
  * KLI System commands — health, tools
  */
 
-import { mdFetch, jsonFetch, resolveApiUrl } from '../api';
+import { mdFetch, resolveApiUrl, fetchToolsWithFallback } from '../api';
 import { resolveFrontendUrl } from '../auth';
 
 export async function handleHealth(
@@ -51,7 +51,12 @@ export async function handleHealth(
   }
 }
 
-export async function handleTools(apiUrl: string): Promise<void> {
-  const data = await jsonFetch(`${apiUrl}/api/tools`);
-  console.log(JSON.stringify(data, null, 2));
+export async function handleTools(env: string, apiUrl: string): Promise<void> {
+  try {
+    const result = await fetchToolsWithFallback(apiUrl, env);
+    console.log(JSON.stringify(result.data, null, 2));
+  } catch (err: any) {
+    console.error(`⚠  ${err.message}`);
+    process.exit(1);
+  }
 }
