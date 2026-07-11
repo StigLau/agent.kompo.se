@@ -3,6 +3,9 @@
  */
 
 import { describe, test, expect } from 'bun:test';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import { join, resolve } from 'path';
 import {
   renderAgentContext,
   parseKnowledgeYaml,
@@ -361,4 +364,52 @@ describe('renderAgentContext', () => {
     // Even with 20 units it should be fine — the template is compact
     expect(lineCount).toBeLessThan(200);
   });
+});
+
+// ---------------------------------------------------------------------------
+// kli init subprocess behavior
+// ---------------------------------------------------------------------------
+
+test('fails closed for a missing local manifest, unless partial context is allowed', () => {
+  const cwd = mkdtempSync(join(tmpdir(), 'kli-init-cwd-'));
+  const home = mkdtempSync(join(tmpdir(), 'kli-init-home-'));
+  const cliPath = resolve(import.meta.dir, '../src/cli.ts');
+  const env = { ...process.env, HOME: home };
+
+  // resolveApiUrl has no offline override. The tools probe may contact sandbox-use2,
+  // but these assertions depend only on the locally missing manifest failure path.
+  const runInit = (allowPartial = false) => Bun.spawnSync({
+    cmd: [
+      'bun',
+      cliPath,
+      '--env',
+      'sandbox-use2',
+      'init',
+      '--manifest',
+      '/nonexistent/manifest.yaml',
+      ...(allowPartial ? ['--allow-partial'] : []),
+    ],
+    cwd,
+    env,
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
+
+  try {
+    const failed = runInit();
+    const failedOutput = `${new TextDecoder().decode(failed.stdout)}${new TextDecoder().decode(failed.stderr)}`;
+    expect(failed.exitCode).not.toBe(0);
+    expect(failedOutput).toContain('discovery incomplete');
+    expect(existsSync(join(cwd, 'AGENTS.md'))).toBe(false);
+
+    const partial = runInit(true);
+    expect(partial.exitCode).toBe(0);
+
+    const agentsPath = join(cwd, 'AGENTS.md');
+    expect(existsSync(agentsPath)).toBe(true);
+    expect(readFileSync(agentsPath, 'utf-8').split('\n')[0]).toContain('INCOMPLETE CONTEXT');
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
 });
