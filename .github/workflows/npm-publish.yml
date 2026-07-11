@@ -47,11 +47,12 @@ jobs:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -euo pipefail
+          umask 077
           test -n "$NPM_TOKEN" || {
             echo "NPM_TOKEN repository secret is required for publishing" >&2
             exit 1
           }
-          printf '%s\n' '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > "$HOME/.npmrc"
+          printf '%s\n' "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > "$HOME/.npmrc"
 
       - name: Verify npm package target
         run: |
