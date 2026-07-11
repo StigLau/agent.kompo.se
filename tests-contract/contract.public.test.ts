@@ -12,6 +12,8 @@
  */
 
 import { describe, test, expect } from 'bun:test';
+import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 
 // ---------------------------------------------------------------------------
@@ -20,6 +22,8 @@ import * as path from 'path';
 
 const REPO_ROOT = path.resolve(import.meta.dir, '..');
 const CLI_ENTRY = 'src/cli.ts';
+const PUBLIC_TEST_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'kompo-public-contract-'));
+const TOOLS_AUTH_FALLBACK_PHRASE = 'used stored credentials';
 
 /** Spawn the real CLI synchronously. Returns exit code, stdout, and stderr. */
 function kli(
@@ -31,7 +35,7 @@ function kli(
     cwd: opts?.cwd ?? REPO_ROOT,
     stdout: 'pipe',
     stderr: 'pipe',
-    env: opts?.env ? { ...process.env, ...opts.env } : process.env,
+    env: { ...process.env, HOME: PUBLIC_TEST_HOME, ...opts?.env },
   });
   return {
     exitCode: result.exitCode,
@@ -59,6 +63,10 @@ describe('Public contract tests (test env — no auth required)', () => {
   describe('Tools', () => {
     test('GET /api/tools returns JSON endpoint manifest (MUST be public)', () => {
       const { exitCode, stdout, stderr } = kli(['--env', 'test', 'tools']);
+
+      // The public suite always uses an empty HOME, so a stored local token
+      // cannot turn an unauthenticated 401 into a false green result.
+      expect(stderr).not.toContain(TOOLS_AUTH_FALLBACK_PHRASE);
 
       // Public discovery is a non-negotiable contract: /api/tools MUST NOT
       // require authentication. A non-zero exit or 401 here is a server-side

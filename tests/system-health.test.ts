@@ -3,7 +3,7 @@
  */
 
 import { describe, test, expect } from 'bun:test';
-import { evaluateKcpManifest } from '../src/commands/system';
+import { discoverKcpManifest, evaluateKcpManifest } from '../src/commands/system';
 import type { KcpManifestStatus } from '../src/commands/system';
 
 // ---------------------------------------------------------------------------
@@ -41,6 +41,18 @@ units:
     const result = evaluateKcpManifest(yaml);
     expect(result.ok).toBe(true);
     expect(result.kcpVersion).toBe('0.5');
+    expect(result.unitCount).toBe(1);
+  });
+
+  test('tab-indented units → OK', () => {
+    const result = evaluateKcpManifest('kcp_version: "1"\nunits:\n\t- id: tab-unit\n');
+    expect(result.ok).toBe(true);
+    expect(result.unitCount).toBe(1);
+  });
+
+  test('four-space-indented units → OK', () => {
+    const result = evaluateKcpManifest('kcp_version: "1"\nunits:\n    - id: spaced-unit\n');
+    expect(result.ok).toBe(true);
     expect(result.unitCount).toBe(1);
   });
 
@@ -115,6 +127,13 @@ units:
     expect(result.unitCount).toBe(0);
   });
 
+  test('HTML typed script redirect → degraded as HTML redirect', () => {
+    const yaml = '<script type="text/javascript">window.location = "/v2";</script>';
+    const result = evaluateKcpManifest(yaml);
+    expect(result.ok).toBe(false);
+    expect(result.degradedReason).toContain('HTML redirect');
+  });
+
   // ── Degraded: redirect language in body, 0 units ────────────────────
 
   test('redirect stub language with 0 units → degraded', () => {
@@ -184,5 +203,34 @@ project: test
     expect(result.unitCount).toBe(0);
     expect(result.kcpVersion).toBe('0.1');
     expect(result.degradedReason).toContain('0 knowledge units');
+  });
+});
+
+describe('discoverKcpManifest', () => {
+  test('continues past degraded manifest and reports a later healthy candidate', async () => {
+    const urls = ['https://first.example/knowledge.yaml', 'https://second.example/knowledge.yaml'];
+    const fetcher = async (url: string) => new Response(
+      url === urls[0]
+        ? 'kcp_version: "1"\nunits:\n'
+        : 'kcp_version: "1"\nunits:\n  - id: healthy\n',
+    );
+
+    const result = await discoverKcpManifest(urls, fetcher);
+    expect(result.status?.ok).toBe(true);
+    expect(result.sourceUrl).toBe(urls[1]);
+  });
+
+  test('reports the first degraded manifest when no candidate is healthy', async () => {
+    const urls = ['https://first.example/knowledge.yaml', 'https://second.example/knowledge.yaml'];
+    const fetcher = async (url: string) => new Response(
+      url === urls[0]
+        ? 'kcp_version: "1"\nunits:\n'
+        : 'units:\n  - id: missing-version\n',
+    );
+
+    const result = await discoverKcpManifest(urls, fetcher);
+    expect(result.status?.ok).toBe(false);
+    expect(result.status?.degradedReason).toContain('0 knowledge units');
+    expect(result.sourceUrl).toBe(urls[0]);
   });
 });

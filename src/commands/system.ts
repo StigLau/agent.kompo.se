@@ -17,6 +17,14 @@ export interface KcpManifestStatus {
   degradedReason: string | null;
 }
 
+export interface KcpDiscoveryResult {
+  status: KcpManifestStatus | null;
+  sourceUrl: string | null;
+  fetchError: string | null;
+}
+
+type KcpFetcher = (url: string) => Promise<Response>;
+
 /**
  * Evaluate a fetched knowledge.yaml body for fitness-for-agent-use.
  *
@@ -32,7 +40,7 @@ export function evaluateKcpManifest(yaml: string): KcpManifestStatus {
 
   // Detect HTML redirect stubs (server returns web redirect page as
   // knowledge.yaml — common on incomplete deployments).
-  if (/<(!DOCTYPE|html|meta\s+http-equiv|script\s*>\s*window\.location)/i.test(trimmed)) {
+  if (/<(!DOCTYPE|html|meta\s+http-equiv|script\b[^>]*>\s*window\.location)/i.test(trimmed)) {
     return {
       ok: false,
       kcpVersion: null,
@@ -45,7 +53,7 @@ export function evaluateKcpManifest(yaml: string): KcpManifestStatus {
 
   const versionMatch = trimmed.match(/^kcp_version:\s*"?([^"\n]+)"?/m);
   const updatedMatch = trimmed.match(/^updated:\s*"?([^"\n]+)"?/m);
-  const unitCount = (trimmed.match(/^  - id:/gm) ?? []).length;
+  const unitCount = (trimmed.match(/^[ \t]+- id:/gm) ?? []).length;
 
   // redirect-stub detection: 0 units + "redirect" language in the body
   if (unitCount === 0 && /\bredirect\b/i.test(trimmed) && !versionMatch) {
@@ -93,6 +101,32 @@ export function evaluateKcpManifest(yaml: string): KcpManifestStatus {
   };
 }
 
+/** Try each discovery URL, preferring a healthy manifest over a degraded one. */
+export async function discoverKcpManifest(
+  urls: string[],
+  fetcher: KcpFetcher = fetch,
+): Promise<KcpDiscoveryResult> {
+  let firstDegraded: KcpDiscoveryResult | null = null;
+  let lastFetchError: string | null = null;
+
+  for (const url of [...new Set(urls)]) {
+    try {
+      const res = await fetcher(url);
+      if (!res.ok) {
+        lastFetchError = `GET ${url} → HTTP ${res.status}`;
+        continue;
+      }
+      const status = evaluateKcpManifest(await res.text());
+      if (status.ok) return { status, sourceUrl: url, fetchError: null };
+      firstDegraded ??= { status, sourceUrl: url, fetchError: null };
+    } catch (e: any) {
+      lastFetchError = e.message;
+    }
+  }
+
+  return firstDegraded ?? { status: null, sourceUrl: null, fetchError: lastFetchError };
+}
+
 // ---------------------------------------------------------------------------
 // Health command
 // ---------------------------------------------------------------------------
@@ -112,39 +146,24 @@ export async function handleHealth(
       ? ['https://use2.sandbox.makeshitapp.com/knowledge.yaml']
       : []),
   ];
-  let kcpOk = false;
-  let lastKcpError = '';
-  for (const kcpUrl of [...new Set(kcpCandidates)]) {
-    try {
-      const res = await fetch(kcpUrl);
-      if (!res.ok) {
-        lastKcpError = `GET ${kcpUrl} → HTTP ${res.status}`;
-        continue;
-      }
-      const yaml = await res.text();
-      const status = evaluateKcpManifest(yaml);
-
-      console.log('\n# KCP Discovery Chain');
-      if (status.ok) {
-        console.log(
-          `- knowledge.yaml: OK (kcp_version: ${status.kcpVersion}, units: ${status.unitCount}, updated: ${status.updated ?? '?'})`,
-        );
-      } else {
-        console.log(
-          `- knowledge.yaml: DEGRADED (kcp_version: ${status.kcpVersion ?? '?'}, units: ${status.unitCount}, updated: ${status.updated ?? '?'})`,
-        );
-        console.log(`- reason: ${status.degradedReason}`);
-      }
-      console.log(`- source: ${kcpUrl}`);
-      kcpOk = status.ok;
-      break;
-    } catch (e: any) {
-      lastKcpError = e.message;
+  const kcp = await discoverKcpManifest(kcpCandidates);
+  if (kcp.status) {
+    console.log('\n# KCP Discovery Chain');
+    if (kcp.status.ok) {
+      console.log(
+        `- knowledge.yaml: OK (kcp_version: ${kcp.status.kcpVersion}, units: ${kcp.status.unitCount}, updated: ${kcp.status.updated ?? '?'})`,
+      );
+    } else {
+      console.log(
+        `- knowledge.yaml: DEGRADED (kcp_version: ${kcp.status.kcpVersion ?? '?'}, units: ${kcp.status.unitCount}, updated: ${kcp.status.updated ?? '?'})`,
+      );
+      console.log(`- reason: ${kcp.status.degradedReason}`);
     }
+    console.log(`- source: ${kcp.sourceUrl}`);
   }
-  if (!kcpOk) {
+  if (!kcp.status?.ok) {
     console.log(
-      `\n⚠ KCP: knowledge.yaml is unavailable or degraded (${lastKcpError || 'unknown error'})`,
+      `\n⚠ KCP: knowledge.yaml is unavailable or degraded (${kcp.status?.degradedReason ?? kcp.fetchError ?? 'unknown error'})`,
     );
   }
 }
