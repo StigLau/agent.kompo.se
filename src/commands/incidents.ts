@@ -29,7 +29,6 @@ export async function handleIncidents(apiUrl: string, token: string): Promise<vo
 
 export async function handleIncidentDownload(
   apiUrl: string,
-  token: string,
   incidentToken: string,
   outputDir?: string,
 ): Promise<void> {

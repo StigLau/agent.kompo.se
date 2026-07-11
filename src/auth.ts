@@ -119,6 +119,35 @@ export function extractAuthCodeFromInput(input: string): string | null {
   return trimmed;
 }
 
+export function extractAuthStateFromInput(input: string): string | null {
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  if (trimmed.includes('state=')) {
+    try {
+      const url = new URL(trimmed);
+      return url.searchParams.get('state');
+    } catch {
+      const match = trimmed.match(/[?&]state=([^&\s]+)/);
+      return match ? decodeURIComponent(match[1]) : null;
+    }
+  }
+  return null;
+}
+
+/**
+ * Verify that the state from a pasted callback URL matches the session state.
+ * Returns an error message string if verification fails, or null if OK.
+ */
+export function verifyPkceState(pastedState: string | null, sessionState: string): string | null {
+  if (!pastedState) {
+    return 'Please paste the full callback URL (it must include the state parameter).';
+  }
+  if (pastedState !== sessionState) {
+    return 'State mismatch — the callback URL does not belong to this login session. Run auth/url again.';
+  }
+  return null;
+}
+
 export function isPkceSessionExpired(
   pkce: Pick<PkceSession, 'createdAt'> | null | undefined,
   now: number = Date.now(),
@@ -238,7 +267,7 @@ export async function cmdAuthUrl(env: string): Promise<void> {
 
 export async function cmdAuthComplete(env: string, input: string | undefined): Promise<void> {
   if (!input || !input.trim()) {
-    console.error('Usage: auth/complete <pasted-url-or-code>');
+    console.error('Usage: auth/complete <pasted-callback-url>');
     process.exit(3);
   }
 
@@ -258,6 +287,18 @@ export async function cmdAuthComplete(env: string, input: string | undefined): P
   if (!code) {
     console.error('Could not extract an authorization code from the input.');
     process.exit(3);
+  }
+
+  // Verify PKCE state to prevent login CSRF
+  const pastedState = extractAuthStateFromInput(input);
+  const stateError = verifyPkceState(pastedState, pkce.state);
+  if (stateError) {
+    if (pastedState && pastedState !== pkce.state) {
+      // State mismatch — delete the PKCE session to prevent reuse
+      deleteFileIfExists(pkceFile);
+    }
+    console.error(stateError);
+    process.exit(1);
   }
 
   const frontendOrigin = resolveFrontendOriginForAuth(env);

@@ -8,9 +8,8 @@ import { resolveFrontendUrl } from '../auth';
 export async function handleHealth(
   env: string,
   apiUrl: string,
-  token: string,
 ): Promise<void> {
-  const md = await mdFetch(`${apiUrl}/api/health`, { token });
+  const md = await mdFetch(`${apiUrl}/api/health`);
   console.log(md);
 
   // KCP discovery chain check — knowledge.yaml freshness
@@ -52,7 +51,7 @@ export async function handleHealth(
   }
 }
 
-export async function handleTools(apiUrl: string, token: string): Promise<void> {
-  const data = await jsonFetch(`${apiUrl}/api/tools`, { token });
+export async function handleTools(apiUrl: string): Promise<void> {
+  const data = await jsonFetch(`${apiUrl}/api/tools`);
   console.log(JSON.stringify(data, null, 2));
 }

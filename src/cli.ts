@@ -50,7 +50,7 @@ Commands:
 
   Auth:
     auth/url                 Generate a PKCE login URL (entry point for first-time users)
-    auth/complete <url>      Complete login by pasting the callback URL or code
+    auth/complete <url>      Complete login by pasting the full callback URL
     auth/refresh             Refresh stored tokens
     auth/status              Show current auth identity and token expiry
 
@@ -185,6 +185,48 @@ async function main() {
   }
 
   // -----------------------------------------------------------------------
+  // Public commands (no token required)
+  // -----------------------------------------------------------------------
+  if (command === 'health') {
+    const { handleHealth } = await import('./commands/system');
+    await handleHealth(env, apiUrl);
+    return;
+  }
+  if (command === 'tools') {
+    const { handleTools } = await import('./commands/system');
+    await handleTools(apiUrl);
+    return;
+  }
+  if (command === 'incident-download') {
+    const { handleIncidentDownload } = await import('./commands/incidents');
+    const incidentToken = cmdArgs[0];
+    if (!incidentToken) {
+      console.error('Usage: kli incident-download <token> [--output <dir>]');
+      process.exit(1);
+    }
+    // Parse optional --output flag
+    let outputDir: string | undefined;
+    for (let i = 1; i < cmdArgs.length; i++) {
+      if (cmdArgs[i] === '--output' && cmdArgs[i + 1]) {
+        outputDir = cmdArgs[i + 1];
+        break;
+      }
+    }
+    await handleIncidentDownload(apiUrl, incidentToken, outputDir);
+    return;
+  }
+  if (command === 'incident-replay') {
+    const { handleIncidentReplay } = await import('./commands/incidents');
+    const packageDir = cmdArgs[0];
+    if (!packageDir) {
+      console.error('Usage: kli incident-replay <package-dir>');
+      process.exit(1);
+    }
+    await handleIncidentReplay(packageDir);
+    return;
+  }
+
+  // -----------------------------------------------------------------------
   // All other commands require a token
   // -----------------------------------------------------------------------
   const token = await getToken(env);
@@ -253,12 +295,6 @@ async function main() {
     const { handleProductionById } = await import('./commands/productions');
     const id = command.split('/').slice(1).join('/');
     await handleProductionById(apiUrl, token, id);
-  } else if (command === 'health') {
-    const { handleHealth } = await import('./commands/system');
-    await handleHealth(env, apiUrl, token);
-  } else if (command === 'tools') {
-    const { handleTools } = await import('./commands/system');
-    await handleTools(apiUrl, token);
   } else if (command === 'workstate' || command === 'workstate/show') {
     const { handleWorkstateShow } = await import('./commands/workstate');
     await handleWorkstateShow(projectRoot, env);
@@ -301,30 +337,6 @@ async function main() {
   } else if (command === 'incidents') {
     const { handleIncidents } = await import('./commands/incidents');
     await handleIncidents(apiUrl, token);
-  } else if (command === 'incident-download') {
-    const { handleIncidentDownload } = await import('./commands/incidents');
-    const incidentToken = cmdArgs[0];
-    if (!incidentToken) {
-      console.error('Usage: kli incident-download <token> [--output <dir>]');
-      process.exit(1);
-    }
-    // Parse optional --output flag
-    let outputDir: string | undefined;
-    for (let i = 1; i < cmdArgs.length; i++) {
-      if (cmdArgs[i] === '--output' && cmdArgs[i + 1]) {
-        outputDir = cmdArgs[i + 1];
-        break;
-      }
-    }
-    await handleIncidentDownload(apiUrl, token, incidentToken, outputDir);
-  } else if (command === 'incident-replay') {
-    const { handleIncidentReplay } = await import('./commands/incidents');
-    const packageDir = cmdArgs[0];
-    if (!packageDir) {
-      console.error('Usage: kli incident-replay <package-dir>');
-      process.exit(1);
-    }
-    await handleIncidentReplay(packageDir);
   } else if (command.startsWith('upload-analyze')) {
     const { handleUploadAnalyze } = await import('./commands/media');
     const filePath = cmdArgs[0];
