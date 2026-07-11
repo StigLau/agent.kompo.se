@@ -8,6 +8,7 @@ import {
   parseKnowledgeYaml,
   countToolsOperations,
   KNOWLEDGE_MANIFEST_URL,
+  resolveManifestSource,
 } from '../src/commands/init';
 import type { AgentContextInput, KnowledgeUnit } from '../src/commands/init';
 
@@ -26,6 +27,24 @@ describe('countToolsOperations', () => {
   test('handles malformed input', () => {
     expect(countToolsOperations(null)).toBe(0);
     expect(countToolsOperations({ '/health': { summary: 'not an operation' } })).toBe(0);
+  });
+});
+
+describe('resolveManifestSource', () => {
+  test('uses the hosted manifest by default', () => {
+    expect(resolveManifestSource()).toEqual({ source: KNOWLEDGE_MANIFEST_URL, isUrl: true });
+  });
+
+  test('recognizes an http(s) manifest URL', () => {
+    expect(resolveManifestSource('https://example.test/knowledge.yaml')).toEqual({
+      source: 'https://example.test/knowledge.yaml', isUrl: true,
+    });
+  });
+
+  test('keeps a local manifest path and trims whitespace', () => {
+    expect(resolveManifestSource('  ./knowledge.yaml  ')).toEqual({
+      source: './knowledge.yaml', isUrl: false,
+    });
   });
 });
 

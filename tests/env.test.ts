@@ -65,6 +65,56 @@ describe('parseArgs', () => {
     expect(env).toBe('test');
     expect(command).toBe('auth/url');
   });
+
+  // --manifest flag
+  test('--manifest flag is parsed when present', () => {
+    delete process.env.KOMPO_ENV;
+    const { manifestSource, command } = parseArgs([
+      '--env',
+      'sandbox-use2',
+      '--manifest',
+      '/path/to/knowledge.yaml',
+      'init',
+    ]);
+    expect(manifestSource).toBe('/path/to/knowledge.yaml');
+    expect(command).toBe('init');
+  });
+
+  test('--manifest with URL is parsed', () => {
+    delete process.env.KOMPO_ENV;
+    const { manifestSource, command } = parseArgs([
+      '--manifest',
+      'https://agent.kompo.se/knowledge.yaml',
+      'init',
+    ]);
+    expect(manifestSource).toBe('https://agent.kompo.se/knowledge.yaml');
+    expect(command).toBe('init');
+  });
+
+  test('--manifest not present returns undefined', () => {
+    delete process.env.KOMPO_ENV;
+    const { manifestSource } = parseArgs(['init']);
+    expect(manifestSource).toBeUndefined();
+  });
+
+  test('--manifest and --env can appear in either order', () => {
+    delete process.env.KOMPO_ENV;
+    const r1 = parseArgs(['--manifest', '/tmp/k.yaml', '--env', 'test', 'init']);
+    expect(r1.manifestSource).toBe('/tmp/k.yaml');
+    expect(r1.env).toBe('test');
+
+    const r2 = parseArgs(['--env', 'test', '--manifest', '/tmp/k.yaml', 'init']);
+    expect(r2.manifestSource).toBe('/tmp/k.yaml');
+    expect(r2.env).toBe('test');
+  });
+
+  test('--manifest without value is not parsed', () => {
+    delete process.env.KOMPO_ENV;
+    // If --manifest appears without a value, it's treated as command or arg
+    const { manifestSource, command } = parseArgs(['init', '--manifest']);
+    expect(manifestSource).toBeUndefined();
+    expect(command).toBe('init');
+  });
 });
 
 // ---------------------------------------------------------------------------

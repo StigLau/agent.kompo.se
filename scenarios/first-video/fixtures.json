@@ -1,0 +1,30 @@
+{
+  "env": "sandbox-use2",
+  "tracks": [
+    {
+      "key": "voodoo-people",
+      "filePatterns": ["*voodoo*"],
+      "expectedBpm": 152,
+      "bpmTolerance": 2,
+      "acceptBpmOctaves": true,
+      "expectedStartTimeMs": 54451,
+      "startTimeToleranceMs": 500,
+      "startTimeAdvisory": true
+    },
+    {
+      "key": "no-good",
+      "filePatterns": ["*no*good*", "*nogood*"],
+      "expectedBpm": 144,
+      "bpmTolerance": 2,
+      "acceptBpmOctaves": true,
+      "expectedStartTimeMs": 197,
+      "startTimeToleranceMs": 500,
+      "startTimeAdvisory": true
+    }
+  ],
+  "order": {
+    "beatsPerTrackSegment": 16,
+    "resolution": "1280x720",
+    "durationToleranceSec": 0.5
+  }
+}

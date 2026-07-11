@@ -5,3 +5,7 @@ dist/
 .env
 .env.*
 CODEX_BRIEF.md
+scenarios/first-video/media/*
+!scenarios/first-video/media/.gitkeep
+scenarios/first-video/reports/*
+!scenarios/first-video/reports/.gitkeep
