@@ -6,15 +6,20 @@ what the kompo.ai API accepts and returns.
 
 The manifest is served at the tools discovery endpoint:
 
-- **Production**: `https://api.ai.makeshitapp.com/api/tools`
+- **Production**: `https://ai.makeshitapp.com/api/tools`
 - **Test**: `https://api.test.ai.makeshitapp.com/api/tools`
 
 Agents should
 fetch this to build a complete, typed picture of available operations without needing
 to scrape documentation.
 
-No authentication required — this endpoint exists for bootstrap discovery. All other API
-endpoints require an `Authorization: Bearer <token>` header (see [authentication](authentication.md)).
+This endpoint is intended for unauthenticated bootstrap discovery. Most API
+operations require an `Authorization: Bearer <token>` header; health and incident
+diagnostics are also public (see [authentication](authentication.md)).
+
+Some deployments currently return 401 for `/api/tools`; the CLI tries the public request
+first and retries with stored credentials when needed. If both requests fail, authenticate
+first and retry.
 
 ## Key endpoint groups
 

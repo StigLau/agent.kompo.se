@@ -458,6 +458,16 @@ export async function getToken(env: string): Promise<string> {
   process.exit(1);
 }
 
+/**
+ * Read the stored idToken for an env without side effects.
+ * Does NOT trigger login, refresh, or exit. Returns null if no token file.
+ */
+export function getStoredIdToken(env: string): string | null {
+  const tokens = loadJsonIfExists(authFilePath(env));
+  if (!tokens?.idToken) return null;
+  return tokens.idToken;
+}
+
 /** Return status info for auth/status command */
 export function getAuthStatus(env: string): {
   hasTokens: boolean;

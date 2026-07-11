@@ -8,7 +8,7 @@ finished music video.
 
 The API surface supports six workflow flows:
 
-1. **Bootstrap & discovery** — the [tools manifest](https://api.ai.makeshitapp.com/api/tools) describes every callable
+1. **Bootstrap & discovery** — the [tools manifest](https://ai.makeshitapp.com/api/tools) describes every callable
    operation, its HTTP method, path, and input schema.
 2. **Authentication** — request an account (invitation-only), then log in via `kli auth/url`
    → `kli auth/complete <callback-url>` (PKCE paste-back flow). The CLI auto-refreshes
@@ -28,13 +28,13 @@ The API surface supports six workflow flows:
 
 | Environment | Frontend | API |
 |-------------|----------|-----|
-| Production | https://ai.makeshitapp.com | https://api.ai.makeshitapp.com |
+| Production | https://ai.makeshitapp.com | https://ai.makeshitapp.com (path-routed /api/*) |
 | Test | https://test.ai.makeshitapp.com | https://api.test.ai.makeshitapp.com |
 
 ## Quick health check
 
 ```bash
-curl https://api.ai.makeshitapp.com/api/health
+curl https://ai.makeshitapp.com/api/health
 # → { "status": "healthy", "version": "2.0-typescript-full", "timestamp": "..." }
 ```
 

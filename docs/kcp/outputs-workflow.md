@@ -36,7 +36,7 @@ Response:
 ## Download a video
 
 ```bash
-curl -H "Authorization: Bearer <token>" https://api.ai.makeshitapp.com/api/outputs | \
+curl -H "Authorization: Bearer <token>" https://ai.makeshitapp.com/api/outputs | \
   jq -r '.outputs[0].download_url' | \
   xargs curl -o my-video.mp4
 ```
