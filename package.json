@@ -7,6 +7,17 @@
   "bin": {
     "kli": "src/cli.ts"
   },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE",
+    "knowledge.yaml",
+    "docs/kcp"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "test": "bun test tests/"
   },
