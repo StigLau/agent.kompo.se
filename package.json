@@ -1,0 +1,16 @@
+{
+  "name": "@kompo/kli",
+  "version": "0.1.0",
+  "description": "Markdown-first API client for kompo.ai — agent-first CLI",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "kli": "src/cli.ts"
+  },
+  "scripts": {
+    "test": "bun test tests/"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
