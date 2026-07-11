@@ -286,3 +286,6 @@ relationships:
   - from: komposition-format
     to: video-build-workflow
     type: enables
+  - from: komposition-format
+    to: komposition-v3
+    type: context
