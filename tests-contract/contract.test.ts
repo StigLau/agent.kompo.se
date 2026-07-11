@@ -50,7 +50,7 @@ function kli(
 // ---------------------------------------------------------------------------
 
 interface AuthInfo {
-  /** True when a user auth file exists AND the token is NOT expired. */
+  /** True when a user auth file exists and is usable or refreshable. */
   hasAuth: boolean;
   email: string;
   sourceLine: string;
@@ -64,9 +64,18 @@ function detectAuth(): AuthInfo {
   const expired = combined.includes('EXPIRED');
   const emailMatch = combined.match(/identity:\s*(.+)/);
   const sourceLineMatch = combined.match(/(source:.*)/);
+  let refreshable = false;
+  try {
+    const authPath = path.join(os.homedir(), '.kompo', 'auth-test.json');
+    const stored = JSON.parse(fs.readFileSync(authPath, 'utf8')) as { refreshToken?: string };
+    refreshable = typeof stored.refreshToken === 'string' && stored.refreshToken.length > 0;
+  } catch {
+    // Missing or malformed stores remain unauthenticated.
+  }
   return {
-    // Auth is only valid if tokens exist AND are not expired
-    hasAuth: hasTokens && !expired,
+    // The CLI refreshes expired tokens itself; let refreshable stores exercise
+    // authenticated contracts instead of silently skipping after token expiry.
+    hasAuth: hasTokens && (!expired || refreshable),
     email: emailMatch?.[1]?.trim() || '',
     sourceLine: sourceLineMatch?.[1]?.trim() || '',
     expired,
