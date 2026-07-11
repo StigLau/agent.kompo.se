@@ -53,5 +53,39 @@ jobs:
           }
           printf '%s\n' '//registry.npmjs.org/:_authToken=${NPM_TOKEN}' > "$HOME/.npmrc"
 
+      - name: Verify npm package target
+        run: |
+          set -euo pipefail
+          package_name="$(bun -e "console.log(JSON.parse(await Bun.file('package.json').text()).name)")"
+
+          # Never overwrite an existing package. A 404 is the expected result
+          # for the first release; other registry failures are fatal.
+          if npm view "$package_name" version --registry https://registry.npmjs.org/ >/dev/null 2>&1; then
+            echo "Package $package_name already exists on npm" >&2
+            exit 1
+          fi
+
+          # Publishing a scoped package requires access to its npm org. If the
+          # configured token cannot publish the @kompo scope, use the documented
+          # unscoped fallback rather than failing after all build checks passed.
+          if [[ "$package_name" == @*/* ]]; then
+            scope="${package_name#@}"
+            scope="${scope%%/*}"
+            if npm access ls-packages "$scope" --json --registry https://registry.npmjs.org/ >/dev/null 2>&1; then
+              echo "npm scope @$scope is available"
+            else
+              fallback_name="kompo-kli"
+              if npm view "$fallback_name" version --registry https://registry.npmjs.org/ >/dev/null 2>&1; then
+                echo "Fallback package $fallback_name already exists on npm" >&2
+                exit 1
+              fi
+              bun -e "const p=JSON.parse(await Bun.file('package.json').text()); p.name='${fallback_name}'; await Bun.write('package.json', JSON.stringify(p, null, 2) + '\\n')"
+              package_name="$fallback_name"
+              echo "npm scope @$scope unavailable; publishing unscoped as $package_name"
+            fi
+          fi
+
+          echo "Publishing package: $package_name"
+
       - name: Publish package
         run: bun publish --access public
