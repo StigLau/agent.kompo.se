@@ -279,6 +279,59 @@ describe('renderAgentContext', () => {
     expect(lineCount).toBeLessThanOrEqual(121); // 120 content lines + trailing newline
   });
 
+  // --allow-partial banner
+  test('partial banner is rendered FIRST when partial=true', () => {
+    const md = renderAgentContext(
+      makeInput({
+        partial: true,
+        partialWarnings: ['Tools discovery failed: HTTP 401', 'Knowledge manifest parsed to 0 units'],
+      }),
+    );
+    // Banner must appear before the header
+    const headerIdx = md.indexOf('# Kompo.ai — Agent Context');
+    const bannerIdx = md.indexOf('⚠️  **WARNING: INCOMPLETE CONTEXT**');
+    expect(bannerIdx).toBeGreaterThan(-1);
+    expect(bannerIdx).toBeLessThan(headerIdx);
+  });
+
+  test('partial banner lists all failed steps', () => {
+    const md = renderAgentContext(
+      makeInput({
+        partial: true,
+        partialWarnings: [
+          'Tools discovery failed: HTTP 401',
+          'Knowledge manifest fetch failed: HTTP 503',
+        ],
+      }),
+    );
+    expect(md).toContain('Tools discovery failed: HTTP 401');
+    expect(md).toContain('Knowledge manifest fetch failed: HTTP 503');
+    expect(md).toContain('MUST NOT be treated as authoritative');
+    expect(md).toContain('Re-run `kli init` without `--allow-partial`');
+  });
+
+  test('no partial banner when partial is false or undefined', () => {
+    const md = renderAgentContext(makeInput({}));
+    expect(md).not.toContain('INCOMPLETE CONTEXT');
+    expect(md).not.toContain('--allow-partial');
+  });
+
+  test('no partial banner when partial=true but no warnings', () => {
+    const md = renderAgentContext(makeInput({ partial: true }));
+    expect(md).not.toContain('INCOMPLETE CONTEXT');
+  });
+
+  test('partial banner with single failure is still clear', () => {
+    const md = renderAgentContext(
+      makeInput({
+        partial: true,
+        partialWarnings: ['Knowledge manifest parsed to 0 units'],
+      }),
+    );
+    expect(md).toContain('⚠️  **WARNING: INCOMPLETE CONTEXT**');
+    expect(md).toContain('Knowledge manifest parsed to 0 units');
+  });
+
   test('template with many units is still well under limits', () => {
     const units: KnowledgeUnit[] = Array.from({ length: 20 }, (_, i) => ({
       id: `unit-${i}`,

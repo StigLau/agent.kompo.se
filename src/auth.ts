@@ -156,11 +156,6 @@ export function isPkceSessionExpired(
   return now - pkce.createdAt > PKCE_SESSION_TTL_MS;
 }
 
-export function maskTokenTail(token: string | undefined | null): string {
-  if (!token || token.length < 12) return '***';
-  return `...${token.slice(-8)}`;
-}
-
 export function decodeIdTokenEmail(idToken: string): string | undefined {
   try {
     const payload = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
@@ -353,7 +348,6 @@ export async function cmdAuthComplete(env: string, input: string | undefined): P
   console.log('');
   console.log(`- Authenticated as: ${email || '(unknown — could not decode idToken)'}`);
   console.log(`- Token expires: ${new Date(tokens.expiresAt).toISOString()}`);
-  console.log(`- idToken: ${maskTokenTail(tokens.idToken)}`);
   console.log(`- Saved to: ~/.kompo/auth-${env}.json`);
 }
 
@@ -406,7 +400,6 @@ export async function cmdAuthRefresh(env: string): Promise<string> {
 
   console.log(`# Auth Refresh Complete (${env})`);
   console.log(`- Token expires: ${new Date(newTokens.expiresAt).toISOString()}`);
-  console.log(`- idToken: ${maskTokenTail(newTokens.idToken)}`);
 
   return newTokens.idToken;
 }
@@ -472,7 +465,6 @@ export function getStoredIdToken(env: string): string | null {
 export function getAuthStatus(env: string): {
   hasTokens: boolean;
   email?: string;
-  idTokenTail?: string;
   expiresAt?: number;
   expired: boolean;
 } {
@@ -486,7 +478,6 @@ export function getAuthStatus(env: string): {
   return {
     hasTokens: true,
     email,
-    idTokenTail: maskTokenTail(tokens.idToken),
     expiresAt: tokens.expiresAt,
     expired,
   };
