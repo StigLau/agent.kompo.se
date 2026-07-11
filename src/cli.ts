@@ -118,6 +118,12 @@ async function main() {
 
   const { env, command, cmdArgs } = parseArgs(rawArgs);
 
+  // Help is global and must not require an auth file.
+  if (command === 'help' || command === '--help') {
+    console.log(HELP_TEXT);
+    return;
+  }
+
   // Validate env against known environments
   const envError = validateEnv(env);
   if (envError) {
