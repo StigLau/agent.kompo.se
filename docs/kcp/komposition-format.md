@@ -134,6 +134,10 @@ Format: `[remotion:CompositionId](source-generated) "Description"`
 | `KompoDataViz` | MP4 bar chart | `stats[]` (array of `{label, value}`) |
 | `SegmentCard` | MP4 timing visualization | `segmentName`, `beatStart`, `beatEnd`, `bgColor`, `accentColor`, `segmentIndex`, `bpm` |
 
+### Fallback if a generated segment fails to render
+
+A `source-generated` (remotion:*) segment depends on server-side rendering infrastructure. If a build fails specifically at a generated-segment render step, a `source-video` or `source-image` visual (see Source References above) referencing a pre-uploaded file is a reliable fallback that does not depend on that rendering path — swap the segment type, keep the same beat range, and resubmit.
+
 ## Common Mistakes
 
 - Missing `## Metadata` section or BPM field → build fails
@@ -141,3 +145,13 @@ Format: `[remotion:CompositionId](source-generated) "Description"`
 - Overlapping visual beat ranges → unexpected stacking behavior
 - No audio track → video renders but is silent
 - Sending a `name` field in the create request → rejected (name is extracted from H1)
+- **Mixing tracks of different tempo without accounting for the single global BPM** — there is
+  only ONE `BPM` value per komposition, and every track's beat positions (visual and audio)
+  are converted to time using that one value. If you compose two audio kilder with different
+  measured tempos (see [media-analysis](media-analysis.md)), beat counts authored against a
+  track's own native BPM will play at the wrong speed once resolved against the document's
+  declared BPM. Either declare the BPM you actually want the timeline to run at and convert
+  each track's beat counts to match, or avoid mixing tracks whose tempos diverge significantly.
+- **Assuming output resolution is configurable** — there is no resolution field in this format.
+  The platform renders at a fixed default resolution; do not build downstream logic that expects
+  a specific resolution unless you've confirmed it against a real render.

@@ -1,7 +1,7 @@
-kcp_version: "0.21"
+kcp_version: "0.22"
 project: kompo.ai
 version: 1.0.0
-updated: 2026-07-11
+updated: 2026-07-12
 links:
   web_manifest: /knowledge.yaml
 
@@ -140,6 +140,26 @@ units:
       - "how do I list my media files"
       - "how do I get a presigned upload URL"
       - "how do I manage my media library"
+
+  - id: media-analysis
+    path: docs/kcp/media-analysis.md
+    intent: "How do I get BPM, beat grid, and MusicDNA analysis results for an uploaded audio file so I can compose a beat-accurate komposition?"
+    scope: module
+    audience: [agent, developer]
+    validated: 2026-07-12
+    depends_on: [file-management]
+    discovery:
+      verification_status: verified
+      confidence: 0.9
+    triggers:
+      - "how do I analyze audio"
+      - "how do I get BPM for a track"
+      - "how do I extract MusicDNA"
+      - "how do I detect beats"
+      - "what is upload-analyze"
+      - "how do I poll analysis results"
+      - "what fields does the analysis endpoint return"
+      - "how do I get the beat grid"
 
   - id: multimedia-generation
     path: docs/kcp/multimedia-generation.md
@@ -288,4 +308,13 @@ relationships:
     type: enables
   - from: komposition-format
     to: komposition-v3
+    type: context
+  - from: file-management
+    to: media-analysis
+    type: enables
+  - from: media-analysis
+    to: sources-workflow
+    type: context
+  - from: media-analysis
+    to: komposition-format
     type: context
