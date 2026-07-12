@@ -9,7 +9,7 @@ import { verifyVideo } from './verify';
 
 // expectedStartTimeMs was hand-verified on different rips than the local media; advisory until calibrated against these exact files.
 interface Track { key: string; filePatterns: string[]; expectedBpm: number; bpmTolerance: number; acceptBpmOctaves: boolean; expectedStartTimeMs: number; startTimeToleranceMs: number; startTimeAdvisory: boolean }
-interface Fixture { env: string; tracks: Track[]; order: { beatsPerTrackSegment: number; resolution: string; durationToleranceSec: number } }
+interface Fixture { env: string; tracks: Track[]; order: { beatsPerTrackSegment: number; resolution: string; durationToleranceSec: number }; visualFallback?: { fileId: string; note: string } }
 interface Stage { name: string; expectation: string; run: () => Promise<StageResult> }
 interface StageResult { pass: boolean; evidence: string[]; error?: string }
 interface ReportStage extends StageResult { name: string; expectation: string }
@@ -146,7 +146,11 @@ async function main() {
     { name: 'compose', expectation: 'a beats-only komposition is loaded and appears in kompositions', async run() {
       const beats = fixture.order.beatsPerTrackSegment; const total = beats * fixture.tracks.length; const bpm = Math.round(context.bpms[fixture.tracks[0].key]);
       const audio = fixture.tracks.map((t, i) => `- [${context.fileIds[t.key]}](source-audio) "${t.key}"\n  - Start: ${i * beats} beats\n  - End: ${(i + 1) * beats} beats`).join('\n');
-      const md = `# First Video E2E Scenario\n\n## Metadata\n- BPM: ${bpm}\n\n## Tracks\n\n### Visuals\n- [remotion:KompoTitle](source-generated) "First Video Title"\n  - Start: 0 beats\n  - End: ${total} beats\n  - Props: {"title":"First Video"}\n\n### Audio\n${audio}\n`;
+      const visuals = fixture.visualFallback
+        ? `- [${fixture.visualFallback.fileId}](source-video) "Background"\n  - Start: 0 beats\n  - End: ${total} beats`
+        : `- [remotion:KompoTitle](source-generated) "First Video Title"\n  - Start: 0 beats\n  - End: ${total} beats\n  - Props: {"title":"First Video"}`;
+      console.log(`[compose] visual mode: ${fixture.visualFallback ? `source-video fallback (${fixture.visualFallback.fileId})` : 'remotion:KompoTitle'}`);
+      const md = `# First Video E2E Scenario\n\n## Metadata\n- BPM: ${bpm}\n\n## Tracks\n\n### Visuals\n${visuals}\n\n### Audio\n${audio}\n`;
       const file = path.join(temp, 'first-video.kompo.md'); fs.writeFileSync(file, md); const loaded = kli(['workstate/load-file', file], temp, 60_000);
       const id = (loaded.out + loaded.err).match(/\*\*ID:\*\*\s*`?([^`\s]+)|ID:\s*`([^`]+)`/)?.slice(1).find(Boolean); const listed = id ? kli(['kompositions'], temp, 60_000) : { code: 1, out: '', err: '' };
       const ok = loaded.code === 0 && !!id && listed.code === 0 && (listed.out + listed.err).includes(id);

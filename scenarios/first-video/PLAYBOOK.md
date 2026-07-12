@@ -204,11 +204,26 @@ each track, sequenced in `tracks` order.
   - End: <2*beatsPerTrackSegment> beats
 
 ### Visuals
+If `fixtures.json` contains `visualFallback`, use its pre-uploaded file as a
+source-video background:
+
+```markdown
+- [<visualFallback.fileId>](source-video) "Background"
+  - Start: 0 beats
+  - End: <total-beats> beats
+```
+
+Without `visualFallback`, use the Remotion visual:
+
+```markdown
 - [remotion:KompoTitle](source-generated) "First Video Title"
   - Start: 0 beats
   - End: <total-beats> beats
   - Props: {"title": "E2E First Video", "accentColor": "#6366f1"}
 ```
+
+The fallback is a pre-uploaded solid background used while the Remotion render
+is unavailable; removing it from `fixtures.json` restores the Remotion path.
 
 Save it to a temp file (e.g., `first-video.kompo.md`) and load it:
 

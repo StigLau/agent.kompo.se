@@ -1,5 +1,9 @@
 {
   "env": "sandbox-use2",
+  "visualFallback": {
+    "fileId": "57900857-fdd6-41c3-a968-673a99c33023",
+    "note": "pre-uploaded solid background on sandbox-use2, bypasses broken Remotion render (kompo.ai#2199) until fixed"
+  },
   "tracks": [
     {
       "key": "voodoo-people",
