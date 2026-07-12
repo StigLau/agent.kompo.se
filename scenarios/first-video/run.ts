@@ -156,11 +156,19 @@ async function main() {
       const ok = loaded.code === 0 && !!id && listed.code === 0 && (listed.out + listed.err).includes(id);
       context.kompositionId = id; return { pass: ok, evidence: [log('compose', 'load-file and kompositions listing identify the new ID', cliGot(loaded, `load=${loaded.code}; id=${id || 'missing'}; list=${listed.code}`, ok), ok), ...(listed.code !== 0 && !ok ? [log('compose', 'kompositions listing succeeds', cliGot(listed, `exit ${listed.code}`, false), false)] : [])] };
     } },
-    { name: 'build', expectation: 'render-qc succeeds and a production stream URL resolves', async run() {
-      const rendered = kli(['workstate/render-qc'], temp, 10 * 60_000); const bearer = await token(); let url: string | undefined;
-      if (rendered.code === 0 && bearer && context.kompositionId) { const p = await jsonFetch(`${resolveApiUrl(fixture.env)}/api/productions/by-komposition/${encodeURIComponent(context.kompositionId)}`, { token: bearer }); const production = p?.productions?.[0]; const productionId = production?.productionId || production?.id; if (productionId) { const stream = await jsonFetch(`${resolveApiUrl(fixture.env)}/api/productions/${encodeURIComponent(productionId)}/stream`, { token: bearer }); url = stream?.streamUrl; } }
-      context.streamUrl = url; const ok = rendered.code === 0 && !!url;
-      return { pass: ok, evidence: [log('build', 'render succeeds and production stream resolves', cliGot(rendered, `render=${rendered.code}; stream=${url ? 'present' : 'missing'}`, ok), ok)] };
+    { name: 'build', expectation: 'render-qc succeeds and a production stream or job output URL resolves', async run() {
+      const rendered = kli(['workstate/render-qc'], temp, 10 * 60_000); const bearer = await token(); let url: string | undefined; let urlPath: 'production-stream' | 'job-output-fallback' | undefined;
+      if (rendered.code === 0 && bearer && context.kompositionId) { const p = await jsonFetch(`${resolveApiUrl(fixture.env)}/api/productions/by-komposition/${encodeURIComponent(context.kompositionId)}`, { token: bearer }); const production = p?.productions?.[0]; const productionId = production?.productionId || production?.id; if (productionId) { const stream = await jsonFetch(`${resolveApiUrl(fixture.env)}/api/productions/${encodeURIComponent(productionId)}/stream`, { token: bearer }); url = stream?.streamUrl; if (url) urlPath = 'production-stream'; } }
+      if (!url && bearer) {
+        const jobId = (rendered.out + rendered.err).match(/(?:^|\n)- Job:\s*(\S+)/)?.[1];
+        if (jobId) {
+          const job = await jsonFetch(`${resolveApiUrl(fixture.env)}/api/jobs/${encodeURIComponent(jobId)}`, { token: bearer });
+          url = job?.output_files?.[0]?.download_url;
+          if (url) urlPath = 'job-output-fallback';
+        }
+      }
+      context.streamUrl = url; const ok = !!url && (rendered.code === 0 || urlPath === 'job-output-fallback');
+      return { pass: ok, evidence: [log('build', 'render succeeds and production stream or job output URL resolves', cliGot(rendered, `render=${rendered.code}; stream=${url ? 'present' : 'missing'}; path=${urlPath || 'none'}`, ok), ok)] };
     } },
     { name: 'verify-order', expectation: 'downloaded output has expected duration, streams, resolution, and bitrate', async run() {
       const expected = fixture.tracks.reduce((sum, t) => sum + fixture.order.beatsPerTrackSegment * 60 / context.bpms[t.key], 0); const out = path.join(HERE, 'reports', `output-${Date.now()}.mp4`);

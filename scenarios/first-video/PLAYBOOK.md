@@ -262,6 +262,8 @@ bun src/cli.ts --env sandbox-use2 workstate/render-qc
 This command submits a video_build job, polls until terminal (SUCCEEDED or
 FAILED), resolves the production, and prints the stream URL.
 
+If production/stream resolution is empty, the job's own `output_files[].download_url` is a valid fallback for verification; report this as a possible server-side production-registration gap, not a build failure.
+
 **Expected output shape:**
 ```
 # Muse Renderability Lock
