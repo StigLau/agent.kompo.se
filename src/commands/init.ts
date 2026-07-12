@@ -1,9 +1,13 @@
 /**
  * KLI init command — discovery bootstrap + agent onboarding
  *
- * Best-effort bootstrap that fetches the discovery surface and writes an
- * agent-readable project context file (AGENTS.md) in the current directory.
- * Each step's failure is reported but does NOT abort the others.
+ * Fetches the discovery surface and writes an agent-readable project context
+ * file (AGENTS.md) in the current directory.
+ *
+ * Default: fail closed — if tools discovery or knowledge manifest fetch fails,
+ * or the manifest parses to 0 units, the command exits non-zero and writes NO
+ * context file.  Use --allow-partial to write an incomplete context with a
+ * prominent warning banner.
  */
 
 import { resolveApiUrl, fetchToolsWithFallback } from '../api';
@@ -85,6 +89,10 @@ export interface AgentContextInput {
   units: KnowledgeUnit[];
   toolsCount: number;
   generatedAt: string; // ISO string
+  /** True when --allow-partial was used and some discovery steps failed. */
+  partial?: boolean;
+  /** Human-readable descriptions of what failed (only used when partial=true). */
+  partialWarnings?: string[];
 }
 
 /**
@@ -93,6 +101,22 @@ export interface AgentContextInput {
  */
 export function renderAgentContext(input: AgentContextInput): string {
   const lines: string[] = [];
+
+  // Partial-context warning banner (must be FIRST thing an LLM sees)
+  if (input.partial && input.partialWarnings?.length) {
+    lines.push('> ⚠️  **WARNING: INCOMPLETE CONTEXT**');
+    lines.push('>');
+    lines.push('> This AGENTS.md was generated with `--allow-partial` because one or more');
+    lines.push('> discovery steps failed. It MUST NOT be treated as authoritative.');
+    lines.push('>');
+    lines.push('> Failed steps:');
+    for (const w of input.partialWarnings) {
+      lines.push(`> - ${w}`);
+    }
+    lines.push('>');
+    lines.push('> Re-run `kli init` without `--allow-partial` when the issues are resolved.');
+    lines.push('');
+  }
 
   // Header
   lines.push('# Kompo.ai — Agent Context');
@@ -207,9 +231,9 @@ export async function handleInit(
   env: string,
   apiUrl: string,
   force: boolean,
+  allowPartial: boolean,
 ): Promise<void> {
-  const errors: string[] = [];
-  const warnings: string[] = [];
+  const failures: string[] = [];
   let toolsCount = 0;
   let units: KnowledgeUnit[] = [];
   let authEmail: string | undefined;
@@ -219,12 +243,12 @@ export async function handleInit(
   process.stderr.write('[kli init] Fetching tools manifest...\n');
   try {
     const result = await fetchToolsWithFallback(apiUrl, env);
-    // Count operations — paths in the manifest
     const paths = result.data?.paths ?? {};
     toolsCount = countToolsOperations(paths);
     process.stderr.write(`[kli init] Tools manifest: ${toolsCount} operations\n`);
   } catch (err: any) {
-    warnings.push(`Tools manifest fetch failed: ${err.message}`);
+    failures.push(`Tools discovery failed: ${err.message}`);
+    process.stderr.write(`[kli init] Tools discovery FAILED: ${err.message}\n`);
   }
 
   // Step 2: Fetch the public KCP manifest
@@ -239,18 +263,26 @@ export async function handleInit(
       clearTimeout(timer);
     }
     if (!resp.ok) {
-      warnings.push(`Knowledge manifest fetch failed: HTTP ${resp.status}`);
+      failures.push(`Knowledge manifest fetch failed: HTTP ${resp.status}`);
+      process.stderr.write(`[kli init] Knowledge manifest fetch FAILED: HTTP ${resp.status}\n`);
     } else {
       const yaml = await resp.text();
       if (yaml.length > 1_000_000) {
-        warnings.push('Knowledge manifest too large (>1MB) — skipping unit parsing');
+        failures.push('Knowledge manifest too large (>1MB) — skipping unit parsing');
+        process.stderr.write('[kli init] Knowledge manifest too large (>1MB)\n');
       } else {
         units = parseKnowledgeYaml(yaml);
-        process.stderr.write(`[kli init] Knowledge manifest: ${units.length} units\n`);
+        if (units.length === 0) {
+          failures.push('Knowledge manifest parsed to 0 units');
+          process.stderr.write('[kli init] Knowledge manifest: 0 units parsed\n');
+        } else {
+          process.stderr.write(`[kli init] Knowledge manifest: ${units.length} units\n`);
+        }
       }
     }
   } catch (err: any) {
-    warnings.push(`Knowledge manifest fetch failed: ${err.message}`);
+    failures.push(`Knowledge manifest fetch failed: ${err.message}`);
+    process.stderr.write(`[kli init] Knowledge manifest fetch FAILED: ${err.message}\n`);
   }
 
   // Step 3: Check auth status (read-only — no login triggering)
@@ -264,18 +296,25 @@ export async function handleInit(
       process.stderr.write('[kli init] Auth: not logged in\n');
     }
   } catch (err: any) {
-    warnings.push(`Auth status check failed: ${err.message}`);
-    process.stderr.write('[kli init] Auth: unable to check\n');
+    // Auth check is best-effort — never a hard failure
+    process.stderr.write(`[kli init] Auth: unable to check (${err.message})\n`);
   }
 
-  // Report warnings from steps 1-3
-  for (const w of warnings) {
-    console.warn(`⚠  ${w}`);
-  }
-  if (errors.length > 0) {
-    for (const e of errors) {
-      console.error(`❌ ${e}`);
+  // -----------------------------------------------------------------------
+  // Fail closed: if any discovery step failed and --allow-partial was not
+  // passed, print what failed, exit non-zero, write NO context file.
+  // -----------------------------------------------------------------------
+  if (failures.length > 0 && !allowPartial) {
+    console.error('');
+    console.error('❌ kli init failed — discovery incomplete:');
+    for (const f of failures) {
+      console.error(`  - ${f}`);
     }
+    console.error('');
+    console.error('No AGENTS.md was written.');
+    console.error('Re-run with --allow-partial to write a partial context file with a warning banner,');
+    console.error('or fix the issues above and try again.');
+    process.exit(1);
   }
 
   // Step 4: Write AGENTS.md
@@ -298,16 +337,22 @@ export async function handleInit(
     console.log(`  Tools operations: ${toolsCount}`);
     console.log(`  Knowledge units: ${units.length}`);
     console.log(`  Auth: ${authStatus === 'authenticated' ? `✅ ${authEmail}` : '❌ not logged in'}`);
+    if (failures.length > 0) {
+      console.log(`  ⚠  Partial failures: ${failures.join('; ')}`);
+    }
     return;
   }
 
+  const generatedAt = new Date().toISOString();
   const content = renderAgentContext({
     env,
     authStatus,
     authEmail,
     units,
     toolsCount,
-    generatedAt: new Date().toISOString(),
+    generatedAt,
+    partial: failures.length > 0,
+    partialWarnings: failures.length > 0 ? failures : undefined,
   });
 
   // Symlink guard: refuse to write through a symlink (including dangling
@@ -330,7 +375,11 @@ export async function handleInit(
   }
 
   console.log('');
-  console.log(`✅ AGENTS.md written to ${agentsPath}`);
+  if (failures.length > 0) {
+    console.log('⚠  AGENTS.md written with INCOMPLETE context (--allow-partial).');
+  } else {
+    console.log(`✅ AGENTS.md written to ${agentsPath}`);
+  }
   console.log('');
   console.log('→ Bootstrap summary:');
   console.log(`  Environment: ${env}`);

@@ -50,6 +50,8 @@ Commands:
 
   Project:
     init                     Bootstrap agent context — fetches discovery surface and writes AGENTS.md
+                             Fails closed if discovery is incomplete. Use --allow-partial to
+                             write a clearly-marked partial context instead.
 
   Auth:
     auth/url                 Generate a PKCE login URL (entry point for first-time users)
@@ -106,6 +108,50 @@ Commands:
     tools                    Fetch /api/tools manifest
 
 First time? Run: kli auth/url`;
+
+// ---------------------------------------------------------------------------
+// Known command validation — must happen BEFORE any token loading
+// ---------------------------------------------------------------------------
+
+/**
+ * Validate a command name against the known command set.
+ * Returns true for all valid commands (auth, public, and authenticated).
+ * This check runs BEFORE getToken() to prevent token refresh for unknown commands.
+ */
+export function isKnownCommand(command: string): boolean {
+  // Exact-match commands (auth + public + authenticated exact names)
+  const exactCommands = new Set([
+    'help',
+    // Auth
+    'auth/url', 'auth/complete', 'auth/refresh', 'auth/status',
+    // Public
+    'init', 'health', 'tools', 'incident-download', 'incident-replay',
+    // Authenticated exact
+    'kompositions', 'jobs', 'library', 'staging',
+    'outputs', 'productions',
+    'workstate', 'workstate/show', 'workstate/clear',
+    'workstate/load-file', 'workstate/render', 'workstate/render-qc',
+    'workstate/open',
+    'chat', 'chat-md', 'chat-workstate', 'chat-multimedia',
+    'incidents',
+  ]);
+
+  if (exactCommands.has(command)) return true;
+
+  // Prefix-match commands
+  const prefixes = [
+    'kompositions/',
+    'jobs/',
+    'job-status/',
+    'tasks/',
+    'promote/',
+    'productions/',
+    'production-stream/',
+    'upload-analyze',
+  ];
+
+  return prefixes.some(p => command.startsWith(p));
+}
 
 // ---------------------------------------------------------------------------
 // Main dispatch
@@ -180,7 +226,6 @@ async function main() {
 
     console.log('- source: user auth');
     console.log(`- identity: ${status.email || '(unknown)'}`);
-    console.log(`- idToken: ${status.idTokenTail || '***'}`);
     console.log(
       `- expires: ${status.expiresAt ? new Date(status.expiresAt).toISOString() : 'unknown'}${status.expired ? ' ⚠ EXPIRED' : ''}`,
     );
@@ -199,7 +244,8 @@ async function main() {
   if (command === 'init') {
     const { handleInit } = await import('./commands/init');
     const force = cmdArgs.includes('--force');
-    await handleInit(env, apiUrl, force);
+    const allowPartial = cmdArgs.includes('--allow-partial');
+    await handleInit(env, apiUrl, force, allowPartial);
     return;
   }
   if (command === 'health') {
@@ -242,7 +288,17 @@ async function main() {
   }
 
   // -----------------------------------------------------------------------
-  // All other commands require a token
+  // Validate command name BEFORE any token loading or refresh activity.
+  // An unknown command must exit immediately — no network, no token I/O.
+  // -----------------------------------------------------------------------
+  if (!isKnownCommand(command)) {
+    console.error(`Unknown command: ${command}`);
+    console.error('Run "kli help" for available commands.');
+    process.exit(1);
+  }
+
+  // -----------------------------------------------------------------------
+  // All remaining commands require a token
   // -----------------------------------------------------------------------
   const token = await getToken(env);
 
