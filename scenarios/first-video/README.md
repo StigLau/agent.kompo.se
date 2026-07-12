@@ -3,6 +3,19 @@
 Preconditions: Bun, `ffprobe` (from ffmpeg), the two calibrated audio files in
 `media/`, and one-time human PKCE authentication for `sandbox-use2`.
 
+## Operator-provisioned auth (alternative)
+
+Instead of interactive PKCE login, an operator's internal tooling may
+provision `~/.kompo/auth-<env>.json` directly with JSON in this shape:
+
+```json
+{"idToken":"...","accessToken":"...","refreshToken":"...","expiresAt":0}
+```
+
+The file must have mode `0600`, and `expiresAt` must be a millisecond epoch
+timestamp. The scenario's auth stage accepts any valid token store regardless
+of how it was provisioned.
+
 Run the deterministic rails-mode scenario from the repository root:
 
 ```bash

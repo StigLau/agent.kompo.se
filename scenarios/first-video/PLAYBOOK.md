@@ -56,6 +56,9 @@ localhost page — this is normal. Copy the FULL address-bar URL and run:
 bun src/cli.ts --env sandbox-use2 auth/complete "<pasted-url>"
 ```
 
+If your platform operator has pre-provisioned `~/.kompo/auth-<env>.json`,
+`auth/status` will already report authenticated — skip the login.
+
 **If this fails:**
 - "No pending login session" — run auth/url first.
 - "Login session expired" — run auth/url again.
@@ -83,10 +86,12 @@ bun src/cli.ts --env sandbox-use2 init --manifest <path-to-project-root>/knowled
 
 → Bootstrap summary:
   Environment: sandbox-use2
-  Tools operations: 42
+  Tools operations: 24
   Knowledge units: 14
   Auth: ✅ authenticated as ...
 ```
+
+The exact tools count may grow as the deployed manifest adds tools.
 
 **If this fails:**
 - If exit code != 0: re-run auth/status to confirm you're still logged in.
@@ -135,19 +140,24 @@ Capture each `fileId` — you will need them for the komposition.
 
 ### 4. Verify analysis results
 
-Poll each analysis job until terminal, then fetch the file's MusicDNA data.
-Check that the measured BPM matches the expected value from `fixtures.json`
-(within tolerance; accept 0.5x or 2x octave multiples).
+The rails runner fetches each track's analysis endpoint directly and polls until
+the flat response has `analyzedAt` and a finite `bpm` (up to about 60 attempts,
+5 seconds apart). An LLM should use the same GET with its bearer token, or
+report BLOCKED if it cannot make an authenticated request:
 
 ```bash
-bun src/cli.ts --env sandbox-use2 job-status/<analysis-job-id>
+curl -H "Authorization: Bearer $TOKEN" \
+  -H "Accept: application/json" \
+  "${API_URL}/api/multimedia/<fileId>/analysis"
 ```
 
-**Expected output shape:**
-```
-# Job <analysis-job-id>
-- status: SUCCEEDED
-```
+The response fields are `bpm`, `confidence`, `method`, `beat1Ms` (the advisory
+start-time), `downbeats` (the beat grid), `beats`, and `analyzedAt` (completion
+marker). There is no `musicDNA` wrapper, analysis job, or status field in this
+response. Check that `bpm` matches the expected value from `fixtures.json`
+(within tolerance; accept 0.5x or 2x octave multiples), and that the grid is
+present. The rails runner also records BPM implied by the `beats` array as
+secondary evidence.
 
 Use `fixtures.json` to know the expected values. The rails runner reads the
 analysis response and performs the BPM/start-time/grid checks; record a BLOCKED
@@ -155,15 +165,16 @@ result instead of inventing a client command if those fields are not exposed.
 
 **Key verification points:**
 - BPM within `bpmTolerance` of `expectedBpm` (or 0.5x/2x if `acceptBpmOctaves: true`)
-- `start_time`: advisory, WARN only
-- Beat grid present in analysis output
+- `beat1Ms`: advisory, WARN only
+- `downbeats`: beat grid
+- `analyzedAt`: completion marker
 
 **If this fails:**
 - BPM wildly off: the file may be a different recording than calibrated.
   Re-verify you have the right file.
-- Analysis job FAILED: check job details with
-  `bun src/cli.ts --env sandbox-use2 jobs/<jobId>`. The audio file format may
-  be unsupported (must be WAV, MP3, FLAC, AAC, OGG, or M4A).
+- Analysis is incomplete after polling: retry later or report BLOCKED if the
+  authenticated analysis GET cannot be made. The audio file format may be
+  unsupported (must be WAV, MP3, FLAC, AAC, OGG, or M4A).
 
 ---
 
