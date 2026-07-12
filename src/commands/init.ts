@@ -38,11 +38,18 @@ export interface KnowledgeUnit {
   intent?: string;
 }
 
-/** Count HTTP operations in an OpenAPI-style paths object. */
-export function countToolsOperations(paths: unknown): number {
-  if (!paths || typeof paths !== 'object') return 0;
+/** Count operations in either the deployed tools manifest or OpenAPI-style paths. */
+export function countToolsOperations(manifest: unknown): number {
+  if (!manifest || typeof manifest !== 'object') return 0;
+  if (Array.isArray((manifest as { tools?: unknown }).tools)) {
+    return (manifest as { tools: unknown[] }).tools.length;
+  }
+  const manifestObject = manifest as Record<string, unknown>;
+  const paths = manifestObject.paths && typeof manifestObject.paths === 'object'
+    ? manifestObject.paths as Record<string, unknown>
+    : manifestObject;
   const methods = new Set(['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace']);
-  return Object.values(paths as Record<string, unknown>).reduce<number>((count, pathItem) => {
+  return Object.values(paths).reduce<number>((count, pathItem) => {
     if (!pathItem || typeof pathItem !== 'object') return count;
     return count + Object.keys(pathItem).filter(key => methods.has(key.toLowerCase())).length;
   }, 0);
@@ -257,8 +264,7 @@ export async function handleInit(
   process.stderr.write('[kli init] Fetching tools manifest...\n');
   try {
     const result = await fetchToolsWithFallback(apiUrl, env);
-    const paths = result.data?.paths ?? {};
-    toolsCount = countToolsOperations(paths);
+    toolsCount = countToolsOperations(result.data);
     process.stderr.write(`[kli init] Tools manifest: ${toolsCount} operations\n`);
   } catch (err: any) {
     failures.push(`Tools discovery failed: ${err.message}`);

@@ -20,10 +20,24 @@ import type { AgentContextInput, KnowledgeUnit } from '../src/commands/init';
 // ---------------------------------------------------------------------------
 
 describe('countToolsOperations', () => {
-  test('counts HTTP methods rather than paths', () => {
+  test('counts deployed kompo-tools manifest entries', () => {
     expect(countToolsOperations({
-      '/items': { get: {}, post: {}, parameters: [] },
-      '/items/{id}': { get: {}, delete: {} },
+      schema: 'kompo-tools/1.1',
+      tools: Array.from({ length: 24 }, (_, i) => ({ name: `tool-${i}` })),
+    })).toBe(24);
+  });
+
+  test('garbage returns zero', () => {
+    expect(countToolsOperations({ tools: 'not an array' })).toBe(0);
+    expect(countToolsOperations('garbage')).toBe(0);
+  });
+
+  test('legacy paths shape is counted', () => {
+    expect(countToolsOperations({
+      paths: {
+        '/items': { get: {}, post: {}, parameters: [] },
+        '/items/{id}': { get: {}, delete: {} },
+      },
     })).toBe(4);
   });
 
