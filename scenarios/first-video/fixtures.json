@@ -28,7 +28,7 @@
   ],
   "order": {
     "beatsPerTrackSegment": 16,
-    "resolution": "1280x720",
+    "resolution": "1920x1080",
     "durationToleranceSec": 0.5
   }
 }

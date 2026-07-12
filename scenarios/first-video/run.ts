@@ -73,7 +73,7 @@ function findMedia(track: Track): string | undefined {
 async function token(): Promise<string | null> { try { return await getToken(fixture.env); } catch { return null; } }
 
 async function main() {
-  const context: { fileIds: Record<string, string>; bpms: Record<string, number>; kompositionId?: string; streamUrl?: string } = { fileIds: {}, bpms: {} };
+  const context: { fileIds: Record<string, string>; bpms: Record<string, number>; globalBpm?: number; kompositionId?: string; streamUrl?: string } = { fileIds: {}, bpms: {} };
   const continueOnQcFail = process.argv.includes('--continue-on-qc-fail');
   const temp = fs.mkdtempSync(path.join('/tmp', 'kli-first-video-'));
   const stages: Stage[] = [
@@ -144,7 +144,7 @@ async function main() {
       return { pass: true, evidence };
     } },
     { name: 'compose', expectation: 'a beats-only komposition is loaded and appears in kompositions', async run() {
-      const beats = fixture.order.beatsPerTrackSegment; const total = beats * fixture.tracks.length; const bpm = Math.round(context.bpms[fixture.tracks[0].key]);
+      const beats = fixture.order.beatsPerTrackSegment; const total = beats * fixture.tracks.length; const bpm = Math.round(context.bpms[fixture.tracks[0].key]); context.globalBpm = bpm;
       const audio = fixture.tracks.map((t, i) => `- [${context.fileIds[t.key]}](source-audio) "${t.key}"\n  - Start: ${i * beats} beats\n  - End: ${(i + 1) * beats} beats`).join('\n');
       const visuals = fixture.visualFallback
         ? `- [${fixture.visualFallback.fileId}](source-video) "Background"\n  - Start: 0 beats\n  - End: ${total} beats`
@@ -171,7 +171,9 @@ async function main() {
       return { pass: ok, evidence: [log('build', 'render succeeds and production stream or job output URL resolves', cliGot(rendered, `render=${rendered.code}; stream=${url ? 'present' : 'missing'}; path=${urlPath || 'none'}`, ok), ok)] };
     } },
     { name: 'verify-order', expectation: 'downloaded output has expected duration, streams, resolution, and bitrate', async run() {
-      const expected = fixture.tracks.reduce((sum, t) => sum + fixture.order.beatsPerTrackSegment * 60 / context.bpms[t.key], 0); const out = path.join(HERE, 'reports', `output-${Date.now()}.mp4`);
+      const globalBpm = context.globalBpm;
+      if (globalBpm === undefined) return { pass: false, evidence: [log('verify-order', 'global BPM from compose stage', 'missing', false)] };
+      const expected = fixture.tracks.length * fixture.order.beatsPerTrackSegment * 60 / globalBpm; const out = path.join(HERE, 'reports', `output-${Date.now()}.mp4`);
       if (!context.streamUrl) return { pass: false, evidence: [log('verify-order', 'stream URL', 'missing', false)] };
       const response = await fetch(context.streamUrl); if (!response.ok) return { pass: false, evidence: [log('verify-order', 'download stream', `HTTP ${response.status}`, false)] };
       fs.writeFileSync(out, Buffer.from(await response.arrayBuffer())); const result = verifyVideo({ videoPath: out, expectDurationSec: expected, toleranceSec: fixture.order.durationToleranceSec, resolution: fixture.order.resolution });

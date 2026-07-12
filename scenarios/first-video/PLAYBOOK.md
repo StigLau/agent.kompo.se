@@ -184,7 +184,7 @@ Write a komposition markdown file in beats-based format (V1/V2). Use the
 measured BPM from step 4 and the fileIds from step 3.
 
 The order is defined in `fixtures.json`: `beatsPerTrackSegment` beats from
-each track, sequenced in `tracks` order.
+each track, sequenced in `tracks` order. All tracks in a multi-track komposition share one global BPM for beat-to-time conversion; do not mix tracks of very different tempo without accounting for this.
 
 **Minimal komposition structure:**
 ```markdown
@@ -302,7 +302,7 @@ Download the video and run verification:
 bun scenarios/first-video/verify.ts <downloaded-video.mp4> \
   --expect-duration <computed-seconds> \
   --tolerance 0.5 \
-  --resolution 1280x720
+  --resolution 1920x1080
 ```
 
 **Expected output shape:**
@@ -311,22 +311,23 @@ bun scenarios/first-video/verify.ts <downloaded-video.mp4> \
 
 File: <path> (<size> bytes)
 Streams detected: 2
-  video (h264): 1280x720
+  video (h264): 1920x1080
   audio (aac): ...
 
 ## Checks
 ✅ Duration: expected 14.22s ±0.5s, got 14.25s (diff 0.03s)
 ✅ Video stream: expected present, got present
 ✅ Audio stream: expected present, got present
-✅ Resolution: expected 1280x720, got 1280x720
+✅ Resolution: expected 1920x1080, got 1920x1080
 ✅ Bitrate: expected >0, got 1234567 bps
 
 Overall: PASS
 ```
 
-The expected duration is computed from the komposition: for each track,
-`beats × 60 / measured_bpm`, summed across all tracks. Do NOT hardcode a
-number — compute it.
+Output resolution is a fixed platform default (1920x1080), not client-specifiable.
+
+The expected duration is computed from the komposition using its single global
+BPM: `total_beats × 60 / global_bpm`. Do NOT hardcode a number — compute it.
 
 **If this fails:**
 - "ffprobe not found" — install ffmpeg: `brew install ffmpeg`
