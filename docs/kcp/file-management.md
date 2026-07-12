@@ -51,6 +51,10 @@ Content-Type: application/json
 
 Response: `{ "success": true, "fileId": "uuid" }`
 
+### CLI command coverage
+
+kli's built-in commands may only wire a subset of this HTTP flow for specific content types (for example, a shortcut command that uploads AND triggers audio analysis in one step). The presigned-URL upload flow documented above works for any allowed content type (video, audio, image) regardless of which kli commands exist. If kli has no dedicated command for what you need, call these HTTP endpoints directly with your stored bearer token.
+
 ## Library management
 
 ### List files
