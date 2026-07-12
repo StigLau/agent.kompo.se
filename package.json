@@ -20,7 +20,9 @@
   },
   "scripts": {
     "test": "bun test tests/",
-    "test:contract": "bun test tests-contract/"
+    "test:contract": "bun test tests-contract/",
+    "contract:public": "bun test tests-contract/contract.public.test.ts",
+    "contract:auth": "bun test tests-contract/contract.auth.test.ts"
   },
   "devDependencies": {
     "@types/bun": "latest"
