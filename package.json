@@ -20,6 +20,7 @@
   },
   "scripts": {
     "test": "bun test tests/",
+    "scenario:first-video": "bun scenarios/first-video/run.ts",
     "test:contract": "bun test tests-contract/",
     "contract:public": "bun test tests-contract/contract.public.test.ts",
     "contract:auth": "bun test tests-contract/contract.auth.test.ts"

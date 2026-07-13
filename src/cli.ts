@@ -15,23 +15,36 @@ import { getToken } from './auth';
 // Arg parsing
 // ---------------------------------------------------------------------------
 
-export function parseArgs(rawArgs: string[]): { env: string; command: string; cmdArgs: string[] } {
+export function parseArgs(rawArgs: string[]): {
+  env: string;
+  command: string;
+  cmdArgs: string[];
+  manifestSource?: string;
+} {
   const args = [...rawArgs];
   let env = process.env.KOMPO_ENV?.trim() || 'prod';
+  let manifestSource: string | undefined;
 
-  // Parse --env flag
+  // Parse global flags wherever they appear in the command line.
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--env' && args[i + 1]) {
       env = args[i + 1];
       args.splice(i, 2);
-      break;
+      i--;
+      continue;
+    }
+    if (args[i] === '--manifest' && args[i + 1]) {
+      manifestSource = args[i + 1];
+      args.splice(i, 2);
+      i--;
+      continue;
     }
   }
 
   const command = args[0] || '';
   const cmdArgs = args.slice(1);
 
-  return { env, command, cmdArgs };
+  return { env, command, cmdArgs, manifestSource };
 }
 
 // ---------------------------------------------------------------------------
@@ -49,9 +62,11 @@ Environment:
 Commands:
 
   Project:
-    init                     Bootstrap agent context — fetches discovery surface and writes AGENTS.md
+    init [--manifest <path-or-url>]
+                             Bootstrap agent context — fetches discovery surface and writes AGENTS.md
                              Fails closed if discovery is incomplete. Use --allow-partial to
-                             write a clearly-marked partial context instead.
+                             write a clearly-marked partial context instead. --manifest accepts
+                             a local knowledge.yaml path or an http(s) URL.
 
   Auth:
     auth/url                 Generate a PKCE login URL (entry point for first-time users)
@@ -165,7 +180,7 @@ async function main() {
     return;
   }
 
-  const { env, command, cmdArgs } = parseArgs(rawArgs);
+  const { env, command, cmdArgs, manifestSource } = parseArgs(rawArgs);
 
   // Help is global and must not require an auth file.
   if (command === 'help' || command === '--help') {
@@ -245,7 +260,7 @@ async function main() {
     const { handleInit } = await import('./commands/init');
     const force = cmdArgs.includes('--force');
     const allowPartial = cmdArgs.includes('--allow-partial');
-    await handleInit(env, apiUrl, force, allowPartial);
+    await handleInit(env, apiUrl, force, allowPartial, manifestSource);
     return;
   }
   if (command === 'health') {

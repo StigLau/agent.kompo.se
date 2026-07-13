@@ -1,0 +1,34 @@
+{
+  "env": "sandbox-use2",
+  "visualFallback": {
+    "fileId": "57900857-fdd6-41c3-a968-673a99c33023",
+    "note": "pre-uploaded solid background on sandbox-use2, bypasses broken Remotion render (kompo.ai#2199) until fixed"
+  },
+  "tracks": [
+    {
+      "key": "voodoo-people",
+      "filePatterns": ["*voodoo*"],
+      "expectedBpm": 152,
+      "bpmTolerance": 2,
+      "acceptBpmOctaves": true,
+      "expectedStartTimeMs": 54451,
+      "startTimeToleranceMs": 500,
+      "startTimeAdvisory": true
+    },
+    {
+      "key": "no-good",
+      "filePatterns": ["*no*good*", "*nogood*"],
+      "expectedBpm": 144,
+      "bpmTolerance": 2,
+      "acceptBpmOctaves": true,
+      "expectedStartTimeMs": 197,
+      "startTimeToleranceMs": 500,
+      "startTimeAdvisory": true
+    }
+  ],
+  "order": {
+    "beatsPerTrackSegment": 16,
+    "resolution": "1920x1080",
+    "durationToleranceSec": 0.5
+  }
+}

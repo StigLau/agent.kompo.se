@@ -3,11 +3,15 @@
  */
 
 import { describe, test, expect } from 'bun:test';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import { join, resolve } from 'path';
 import {
   renderAgentContext,
   parseKnowledgeYaml,
   countToolsOperations,
   KNOWLEDGE_MANIFEST_URL,
+  resolveManifestSource,
 } from '../src/commands/init';
 import type { AgentContextInput, KnowledgeUnit } from '../src/commands/init';
 
@@ -16,16 +20,48 @@ import type { AgentContextInput, KnowledgeUnit } from '../src/commands/init';
 // ---------------------------------------------------------------------------
 
 describe('countToolsOperations', () => {
-  test('counts HTTP methods rather than paths', () => {
+  test('counts deployed kompo-tools manifest entries', () => {
     expect(countToolsOperations({
-      '/items': { get: {}, post: {}, parameters: [] },
-      '/items/{id}': { get: {}, delete: {} },
+      schema: 'kompo-tools/1.1',
+      tools: Array.from({ length: 24 }, (_, i) => ({ name: `tool-${i}` })),
+    })).toBe(24);
+  });
+
+  test('garbage returns zero', () => {
+    expect(countToolsOperations({ tools: 'not an array' })).toBe(0);
+    expect(countToolsOperations('garbage')).toBe(0);
+  });
+
+  test('legacy paths shape is counted', () => {
+    expect(countToolsOperations({
+      paths: {
+        '/items': { get: {}, post: {}, parameters: [] },
+        '/items/{id}': { get: {}, delete: {} },
+      },
     })).toBe(4);
   });
 
   test('handles malformed input', () => {
     expect(countToolsOperations(null)).toBe(0);
     expect(countToolsOperations({ '/health': { summary: 'not an operation' } })).toBe(0);
+  });
+});
+
+describe('resolveManifestSource', () => {
+  test('uses the hosted manifest by default', () => {
+    expect(resolveManifestSource()).toEqual({ source: KNOWLEDGE_MANIFEST_URL, isUrl: true });
+  });
+
+  test('recognizes an http(s) manifest URL', () => {
+    expect(resolveManifestSource('https://example.test/knowledge.yaml')).toEqual({
+      source: 'https://example.test/knowledge.yaml', isUrl: true,
+    });
+  });
+
+  test('keeps a local manifest path and trims whitespace', () => {
+    expect(resolveManifestSource('  ./knowledge.yaml  ')).toEqual({
+      source: './knowledge.yaml', isUrl: false,
+    });
   });
 });
 
@@ -342,4 +378,52 @@ describe('renderAgentContext', () => {
     // Even with 20 units it should be fine — the template is compact
     expect(lineCount).toBeLessThan(200);
   });
+});
+
+// ---------------------------------------------------------------------------
+// kli init subprocess behavior
+// ---------------------------------------------------------------------------
+
+test('fails closed for a missing local manifest, unless partial context is allowed', () => {
+  const cwd = mkdtempSync(join(tmpdir(), 'kli-init-cwd-'));
+  const home = mkdtempSync(join(tmpdir(), 'kli-init-home-'));
+  const cliPath = resolve(import.meta.dir, '../src/cli.ts');
+  const env = { ...process.env, HOME: home };
+
+  // resolveApiUrl has no offline override. The tools probe may contact sandbox-use2,
+  // but these assertions depend only on the locally missing manifest failure path.
+  const runInit = (allowPartial = false) => Bun.spawnSync({
+    cmd: [
+      'bun',
+      cliPath,
+      '--env',
+      'sandbox-use2',
+      'init',
+      '--manifest',
+      '/nonexistent/manifest.yaml',
+      ...(allowPartial ? ['--allow-partial'] : []),
+    ],
+    cwd,
+    env,
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
+
+  try {
+    const failed = runInit();
+    const failedOutput = `${new TextDecoder().decode(failed.stdout)}${new TextDecoder().decode(failed.stderr)}`;
+    expect(failed.exitCode).not.toBe(0);
+    expect(failedOutput).toContain('discovery incomplete');
+    expect(existsSync(join(cwd, 'AGENTS.md'))).toBe(false);
+
+    const partial = runInit(true);
+    expect(partial.exitCode).toBe(0);
+
+    const agentsPath = join(cwd, 'AGENTS.md');
+    expect(existsSync(agentsPath)).toBe(true);
+    expect(readFileSync(agentsPath, 'utf-8').split('\n')[0]).toContain('INCOMPLETE CONTEXT');
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+    rmSync(home, { recursive: true, force: true });
+  }
 });

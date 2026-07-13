@@ -20,6 +20,15 @@ import { getAuthStatus } from '../auth';
 /** Public KCP manifest served by the project's discovery host. */
 export const KNOWLEDGE_MANIFEST_URL = 'https://agent.kompo.se/knowledge.yaml';
 
+/** Classify an optional init manifest override without doing I/O. */
+export function resolveManifestSource(manifestSource?: string): {
+  source: string;
+  isUrl: boolean;
+} {
+  const source = manifestSource?.trim() || KNOWLEDGE_MANIFEST_URL;
+  return { source, isUrl: /^https?:\/\//i.test(source) };
+}
+
 // ---------------------------------------------------------------------------
 // Light YAML parser (zero runtime deps — no YAML library)
 // ---------------------------------------------------------------------------
@@ -29,11 +38,18 @@ export interface KnowledgeUnit {
   intent?: string;
 }
 
-/** Count HTTP operations in an OpenAPI-style paths object. */
-export function countToolsOperations(paths: unknown): number {
-  if (!paths || typeof paths !== 'object') return 0;
+/** Count operations in either the deployed tools manifest or OpenAPI-style paths. */
+export function countToolsOperations(manifest: unknown): number {
+  if (!manifest || typeof manifest !== 'object') return 0;
+  if (Array.isArray((manifest as { tools?: unknown }).tools)) {
+    return (manifest as { tools: unknown[] }).tools.length;
+  }
+  const manifestObject = manifest as Record<string, unknown>;
+  const paths = manifestObject.paths && typeof manifestObject.paths === 'object'
+    ? manifestObject.paths as Record<string, unknown>
+    : manifestObject;
   const methods = new Set(['get', 'post', 'put', 'patch', 'delete', 'options', 'head', 'trace']);
-  return Object.values(paths as Record<string, unknown>).reduce<number>((count, pathItem) => {
+  return Object.values(paths).reduce<number>((count, pathItem) => {
     if (!pathItem || typeof pathItem !== 'object') return count;
     return count + Object.keys(pathItem).filter(key => methods.has(key.toLowerCase())).length;
   }, 0);
@@ -232,6 +248,7 @@ export async function handleInit(
   apiUrl: string,
   force: boolean,
   allowPartial: boolean,
+  manifestSource?: string,
 ): Promise<void> {
   const failures: string[] = [];
   let toolsCount = 0;
@@ -239,34 +256,55 @@ export async function handleInit(
   let authEmail: string | undefined;
   let authStatus: 'authenticated' | 'not logged in' = 'not logged in';
 
+  // Resolve manifest source: --manifest flag, or default URL
+  const { source: resolvedManifest, isUrl } = resolveManifestSource(manifestSource);
+  process.stderr.write(`[kli init] Manifest source: ${resolvedManifest}\n`);
+
   // Step 1: Fetch the tools manifest
   process.stderr.write('[kli init] Fetching tools manifest...\n');
   try {
     const result = await fetchToolsWithFallback(apiUrl, env);
-    const paths = result.data?.paths ?? {};
-    toolsCount = countToolsOperations(paths);
+    toolsCount = countToolsOperations(result.data);
     process.stderr.write(`[kli init] Tools manifest: ${toolsCount} operations\n`);
   } catch (err: any) {
     failures.push(`Tools discovery failed: ${err.message}`);
     process.stderr.write(`[kli init] Tools discovery FAILED: ${err.message}\n`);
   }
 
-  // Step 2: Fetch the public KCP manifest
+  // Step 2: Fetch/read the KCP manifest (URL or local path)
   process.stderr.write('[kli init] Fetching knowledge manifest...\n');
   try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 30_000);
-    let resp;
-    try {
-      resp = await fetch(KNOWLEDGE_MANIFEST_URL, { signal: controller.signal });
-    } finally {
-      clearTimeout(timer);
-    }
-    if (!resp.ok) {
-      failures.push(`Knowledge manifest fetch failed: HTTP ${resp.status}`);
-      process.stderr.write(`[kli init] Knowledge manifest fetch FAILED: HTTP ${resp.status}\n`);
+    let yaml: string | undefined;
+
+    if (isUrl) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 30_000);
+      let resp;
+      try {
+        resp = await fetch(resolvedManifest, { signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+      if (!resp.ok) {
+        failures.push(`Knowledge manifest fetch failed: HTTP ${resp.status}`);
+        process.stderr.write(`[kli init] Knowledge manifest fetch FAILED: HTTP ${resp.status}\n`);
+      } else {
+        yaml = await resp.text();
+      }
     } else {
-      const yaml = await resp.text();
+      // Local file path — resolve relative to cwd, read from disk
+      const { existsSync, readFileSync } = await import('fs');
+      const { resolve } = await import('path');
+      const resolvedPath = resolve(process.cwd(), resolvedManifest);
+      if (!existsSync(resolvedPath)) {
+        failures.push(`Knowledge manifest file not found: ${resolvedPath}`);
+        process.stderr.write(`[kli init] Knowledge manifest file not found: ${resolvedPath}\n`);
+      } else {
+        yaml = readFileSync(resolvedPath, 'utf-8');
+      }
+    }
+
+    if (yaml !== undefined) {
       if (yaml.length > 1_000_000) {
         failures.push('Knowledge manifest too large (>1MB) — skipping unit parsing');
         process.stderr.write('[kli init] Knowledge manifest too large (>1MB)\n');
