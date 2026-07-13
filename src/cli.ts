@@ -93,6 +93,7 @@ Commands:
 
   Media:
     upload-analyze <path>    Upload an audio file for analysis (BPM, MusicDNA)
+    upload-media <path>      Upload a video or image file to the media library
 
   Jobs:
     jobs                     List all jobs
@@ -163,6 +164,7 @@ export function isKnownCommand(command: string): boolean {
     'productions/',
     'production-stream/',
     'upload-analyze',
+    'upload-media',
   ];
 
   return prefixes.some(p => command.startsWith(p));
@@ -431,6 +433,14 @@ async function main() {
       process.exit(1);
     }
     await handleUploadAnalyze(apiUrl, token, filePath);
+  } else if (command.startsWith('upload-media')) {
+    const { handleUploadMedia } = await import('./commands/media');
+    const filePath = cmdArgs[0];
+    if (!filePath) {
+      console.error('Usage: kli upload-media <path-to-media-file>');
+      process.exit(1);
+    }
+    await handleUploadMedia(apiUrl, token, filePath);
   } else {
     console.error(`Unknown command: ${command}`);
     console.error('Run "kli help" for available commands.');
