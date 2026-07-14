@@ -38,7 +38,7 @@ The token is a standard Cognito JWT identity token (idToken). Pass it in the
 `Authorization` header:
 
 ```
-Authorization: Bearer eyJraWQiOi...
+Authorization: Bearer <id-token>
 ```
 
 ## Token refresh

@@ -13,13 +13,14 @@ Agents should
 fetch this to build a complete, typed picture of available operations without needing
 to scrape documentation.
 
-This endpoint is intended for unauthenticated bootstrap discovery. Most API
-operations require an `Authorization: Bearer <token>` header; health and incident
-diagnostics are also public (see [authentication](authentication.md)).
+This endpoint is a public, unauthenticated bootstrap contract. Most API operations
+require an `Authorization: Bearer <token>` header; health and incident diagnostics are
+also public (see [authentication](authentication.md)).
 
-Some deployments currently return 401 for `/api/tools`; the CLI tries the public request
-first and retries with stored credentials when needed. If both requests fail, authenticate
-first and retry.
+A 401 from `/api/tools` is a deployment contract failure, not a normal first-time-user
+state. KLI may try a stored credential after a 401 as a compatibility fallback for an
+already-authenticated user, but `kli tools` remains non-zero without credentials and
+`kli init` fails closed when discovery is incomplete.
 
 ## Key endpoint groups
 
