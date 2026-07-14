@@ -32,13 +32,13 @@ Bun is the only supported runtime. The CLI entry point is `src/cli.ts` — run i
 
 ```bash
 bun src/cli.ts help                # Full command reference
-bun src/cli.ts --env test health   # Check API and KCP discovery readiness
+bun src/cli.ts --env test health   # Check API health and KCP discovery
 bun src/cli.ts --env test tools    # Fetch the public API tools manifest
 bun src/cli.ts --env test auth/status
 bun src/cli.ts init                # Fetch discovery and write AGENTS.md
 ```
 
-`health` exits non-zero when the API is unavailable or KCP discovery is missing, invalid, or incomplete. `tools` and `init` are public bootstrap operations; an HTTP 401 from `/api/tools` is a deployment contract failure, not a prompt to paste credentials into a command.
+`health` reports API availability and KCP discovery as separate summaries. It exits non-zero when the API itself is unavailable; a degraded KCP summary means discovery is incomplete, but the service may still be partly functional. `tools` and `init` are public bootstrap operations; an HTTP 401 from `/api/tools` is a deployment contract failure, not a prompt to paste credentials into a command.
 
 `kli init` fetches the knowledge manifest and the API tools manifest, checks auth status, and writes an agent-readable `AGENTS.md` project context file in the current directory. If any discovery step fails — the tools manifest, the knowledge manifest, or a manifest with 0 units — `kli init` exits non-zero and writes no file; pass `--allow-partial` to write the context file anyway with a prominent warning banner marking it incomplete.
 

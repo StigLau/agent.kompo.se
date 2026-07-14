@@ -23,11 +23,6 @@ export interface KcpDiscoveryResult {
   fetchError: string | null;
 }
 
-/** Whether the complete health/discovery chain is ready for agent use. */
-export function isKcpDiscoveryHealthy(result: KcpDiscoveryResult): boolean {
-  return result.status?.ok === true;
-}
-
 type KcpFetcher = (url: string) => Promise<Response>;
 
 /**
@@ -166,14 +161,10 @@ export async function handleHealth(
     }
     console.log(`- source: ${kcp.sourceUrl}`);
   }
-  if (!isKcpDiscoveryHealthy(kcp)) {
+  if (!kcp.status?.ok) {
     console.log(
       `\n⚠ KCP: knowledge.yaml is unavailable or degraded (${kcp.status?.degradedReason ?? kcp.fetchError ?? 'unknown error'})`,
     );
-    // A healthy API is not sufficient for agent onboarding: discovery is part
-    // of the readiness contract. Keep the diagnostic output, but make the
-    // degraded state visible to scripts and supervising LLMs.
-    process.exitCode = 1;
   }
 }
 

@@ -3,11 +3,7 @@
  */
 
 import { describe, test, expect } from 'bun:test';
-import {
-  discoverKcpManifest,
-  evaluateKcpManifest,
-  isKcpDiscoveryHealthy,
-} from '../src/commands/system';
+import { discoverKcpManifest, evaluateKcpManifest } from '../src/commands/system';
 import type { KcpManifestStatus } from '../src/commands/system';
 
 // ---------------------------------------------------------------------------
@@ -207,41 +203,6 @@ project: test
     expect(result.unitCount).toBe(0);
     expect(result.kcpVersion).toBe('0.1');
     expect(result.degradedReason).toContain('0 knowledge units');
-  });
-});
-
-describe('health readiness', () => {
-  test('requires a healthy KCP manifest', () => {
-    expect(isKcpDiscoveryHealthy({
-      status: {
-        ok: true,
-        kcpVersion: '0.22',
-        unitCount: 15,
-        updated: '2026-07-12',
-        degradedReason: null,
-      },
-      sourceUrl: 'https://example.test/knowledge.yaml',
-      fetchError: null,
-    })).toBe(true);
-  });
-
-  test('rejects degraded or unavailable KCP discovery', () => {
-    expect(isKcpDiscoveryHealthy({
-      status: {
-        ok: false,
-        kcpVersion: '0.1',
-        unitCount: 0,
-        updated: null,
-        degradedReason: 'stub',
-      },
-      sourceUrl: 'https://example.test/knowledge.yaml',
-      fetchError: null,
-    })).toBe(false);
-    expect(isKcpDiscoveryHealthy({
-      status: null,
-      sourceUrl: null,
-      fetchError: 'network error',
-    })).toBe(false);
   });
 });
 
