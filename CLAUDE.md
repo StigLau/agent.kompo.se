@@ -14,7 +14,7 @@ Runtime is **Bun** (never npm/node). TypeScript, strict mode.
 
 ## Non-negotiable invariants
 
-1. **This repo is PUBLIC.** Everything committed is world-readable. Never commit: credentials or tokens, internal kompo.ai knowledge units or ops runbooks, internal env/infra details (AWS accounts, stack names, aws-gate), internal issue-process references, test-account details. When curating content from kompo.ai, rewrite around internal material — see the exclusion pattern in PR #9.
+1. **This repo is PUBLIC.** Everything committed is world-readable. Never commit: credentials or tokens, internal kompo.ai knowledge units or ops runbooks, internal env/infra details (AWS accounts, stack names, aws-gate), internal issue-process references, test-account details. When curating content from kompo.ai, rewrite around internal material — see the exclusion pattern in PR #9. Non-prod hostnames appear only in `src/api.ts` `ENV_DEFAULTS`; Pages-served surfaces and README name no non-prod environment.
 2. **Wire contracts are owned by the kompo.ai server.** This is a pure client: never invent, rename, or "improve" API endpoints, request/response shapes, or the komposition format syntax. `knowledge.yaml` + `docs/kcp/` must describe the deployed API truthfully — verify claims against real behavior, don't hand-wave (the "5-minute refresh" incident: docs invented CLI behavior that code contradicted).
 3. **PKCE-only auth.** No credential fallbacks (the internal USER_PASSWORD_AUTH path was deliberately stripped). PKCE `state` verification in `auth/complete` is a security control (login-CSRF) — never weaken it; bare authorization codes are rejected by design because a skippable state check is no check.
 4. **Public commands stay public.** `health`, `tools`, `incident-download`, `incident-replay` must never require login (`GET /api/tools` exists for bootstrap discovery before auth).
@@ -35,7 +35,7 @@ src/workstate.ts  local project working-state
 src/formatters.ts exported, unit-tested markdown formatters
 src/commands/     one module per command group
 tests/            bun test; formatters + arg/env parsing + auth pure functions
-knowledge.yaml    public KCP manifest (curated 14 units); bodies in docs/kcp/
+knowledge.yaml    public KCP manifest (curated 16 units); bodies in docs/kcp/
 ```
 
 ## Relationship to kompo.ai

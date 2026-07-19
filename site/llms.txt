@@ -1,0 +1,13 @@
+# agent.kompo.se — kli, the agent-first client for kompo.ai (LLM-guided music video composition)
+
+Start here:
+- KCP manifest (the map — units, intents, triggers, dependencies): https://agent.kompo.se/knowledge.yaml
+- Getting started (zero to first rendered video): https://agent.kompo.se/docs/kcp/getting-started.md
+- Service overview: https://agent.kompo.se/docs/kcp/service-overview.md
+- Komposition format (wire contract): https://agent.kompo.se/docs/kcp/komposition-format.md
+- Typed API operations: https://ai.makeshitapp.com/api/tools
+- Source & issues: https://github.com/StigLau/agent.kompo.se
+
+Notes: accounts are invitation-only (request via a GitHub issue). The CLI runs on Bun.
+API responses support `Accept: text/markdown`. In a project directory, `kli init`
+fetches this discovery surface and writes an AGENTS.md context file.

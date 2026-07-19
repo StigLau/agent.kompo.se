@@ -26,10 +26,8 @@ The API surface supports six workflow flows:
 
 ## Environments
 
-| Environment | Frontend | API |
-|-------------|----------|-----|
-| Production | https://ai.makeshitapp.com | https://ai.makeshitapp.com (path-routed /api/*) |
-| Test | https://test.ai.makeshitapp.com | https://api.test.ai.makeshitapp.com |
+The production frontend and API live at `https://ai.makeshitapp.com`; the API is path-routed
+under `/api/*`.
 
 ## Quick health check
 
@@ -38,5 +36,4 @@ curl https://ai.makeshitapp.com/api/health
 # → { "status": "healthy", "version": "2.0-typescript-full", "timestamp": "..." }
 ```
 
-No authentication required. Also available at the root `/health` path on environments with
-an `api.` subdomain.
+No authentication required.

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>agent.kompo.se — Agent-first CLI for kompo.ai</title>
-<meta name="description" content="Muse, LYTD and KLI — in a box. The agent-first client for kompo.ai: tools for efficient creation of music videos where your LLM augments you, from the CLI, in the context of your music/video project.">
+<meta name="description" content="Make music videos with your LLM, from the terminal. kli is the agent-first command-line client for kompo.ai.">
 <style>
   :root {
     --bg: #ffffff;
@@ -39,15 +39,16 @@
     padding: 2rem 1rem;
   }
   .container { max-width: 800px; margin: 0 auto; }
-  header { margin-bottom: 3rem; }
+  header { margin-bottom: 2rem; }
   header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; }
-  header p { color: var(--muted); margin-top: 0.5rem; font-size: 1.1rem; }
+  header p { color: var(--muted); margin-top: 0.75rem; font-size: 1.1rem; }
   section { margin-bottom: 2.5rem; }
   h2 { font-size: 1.4rem; font-weight: 600; margin-bottom: 1rem; }
   h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; margin-top: 1.5rem; }
   p, li { margin-bottom: 0.6rem; }
   a { color: var(--accent); text-decoration: none; }
   a:hover { color: var(--accent-hover); text-decoration: underline; }
+  .caption { font-size: 0.9rem; color: var(--muted); }
   .invite-note {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -100,6 +101,7 @@
   }
   .flows li .desc { flex: 1; }
   .flows li .desc strong { display: block; margin-bottom: 0.1rem; }
+  .flows li .desc strong a { color: inherit; }
   .discovery-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -130,25 +132,35 @@
 
 <header>
   <h1>agent.kompo.se</h1>
-  <p><strong>Muse, LYTD and KLI — in a box.</strong> The agent-first client for <a href="https://ai.makeshitapp.com">kompo.ai</a>: tools for efficient creation of music videos where <em>your</em> LLM augments <em>you</em>, from the CLI, in the context of your music/video project.</p>
+  <p><strong>Make music videos with your LLM, from the terminal.</strong> <code>kli</code> is the agent-first command-line client for <a href="https://ai.makeshitapp.com">kompo.ai</a>: you bring audio and footage plus an LLM agent, kompo.ai analyzes your media (BPM, beat grid, MusicDNA), and your agent composes a beat-timed <em>komposition</em> that the platform renders into a finished video. No web UI in the loop — the whole flow runs in your own project directory, and the service is self-describing via <a href="https://github.com/StigLau/knowledge-context-protocol">KCP</a> so your agent can discover every operation on its own.</p>
 </header>
 
 <section>
   <div class="invite-note">
-    <strong>🔐 Access is invitation-only.</strong> If you would like early access, please open an issue on the <a href="https://github.com/StigLau/agent.kompo.se">GitHub repository</a>.
+    <strong>Where things stand.</strong> kompo.ai accounts are invitation-only — request access by <a href="https://github.com/StigLau/agent.kompo.se/issues">opening an issue</a>. The <code>@kompo/kli</code> npm package is not published yet; today you clone the repo and run it with Bun (30 seconds, below). Without an account you can still explore everything that matters for evaluation: the <a href="/knowledge.yaml">knowledge manifest</a>, the <a href="/docs/kcp/komposition-format.md">komposition format</a>, the full CLI, and the public <code>health</code> and discovery endpoints.
   </div>
 </section>
 
 <section>
-  <h2>Install &amp; quickstart</h2>
-  <p>The <code>@kompo/kli</code> CLI package is <strong>publishing soon</strong> — it is not yet available on npm. KLI runs on <a href="https://bun.sh">Bun</a>. Once published, getting started will be:</p>
-  <pre><code>bunx @kompo/kli help
-# or: npm install -g @kompo/kli  # Bun is still required</code></pre>
-  <p>Then, inside a project directory:</p>
-  <pre><code>kli init
-kli auth/url    # prints a PKCE login URL to open in a browser
-kli auth/complete &lt;callback-url&gt;</code></pre>
-  <p>The CLI authenticates against the kompo.ai service (your persisted kompositions, audio/video content, semantic graph, video builds) — no web UI required. The system is self-describing via <a href="https://github.com/StigLau/knowledge-context-protocol">KCP</a>: an agent discovers the domain, the available tools, and the server-side API, then works your project directly.</p>
+  <h2>What a komposition is</h2>
+  <p>A komposition is a markdown document that describes a music video: BPM, beat timings, visual tracks, and which uploaded files to use. There is no timeline UI — you (or your agent) write this directly, and the platform renders it.</p>
+  <pre><code># My First Video
+
+## Metadata
+- BPM: 128
+
+## Tracks
+
+### Visuals
+- [FILE_ID](source-video) "Opening clip"
+  - Start: 0 beats
+  - End: 16 beats
+
+### Audio
+- [FILE_ID](source-audio) "Track"
+  - Start: 0 beats
+  - End: 16 beats</code></pre>
+  <p class="caption">Beats, not milliseconds — <code>duration = beats × 60 / BPM</code>. Full spec: <a href="/docs/kcp/komposition-format.md">komposition-format.md</a>.</p>
 </section>
 
 <section>
@@ -157,42 +169,42 @@ kli auth/complete &lt;callback-url&gt;</code></pre>
     <li>
       <span class="num">1</span>
       <div class="desc">
-        <strong>Bootstrap &amp; discovery</strong>
-        The <a href="https://api.ai.makeshitapp.com/api/tools">tools manifest</a> describes every callable operation, its HTTP method, path, and input schema. <code>kli init</code> fetches the knowledge manifest and writes agent-readable project context.
+        <strong><a href="/docs/kcp/tools-manifest.md">Bootstrap &amp; discovery</a></strong>
+        The <a href="https://ai.makeshitapp.com/api/tools">tools manifest</a> describes every callable operation, its HTTP method, path, and input schema. <code>kli init</code> fetches the knowledge manifest and writes agent-readable project context.
       </div>
     </li>
     <li>
       <span class="num">2</span>
       <div class="desc">
-        <strong>Authentication</strong>
+        <strong><a href="/docs/kcp/authentication.md">Authentication</a></strong>
         PKCE paste-back login via <code>kli auth/url</code> → <code>kli auth/complete &lt;callback-url&gt;</code>. No cloud credentials leave your machine.
       </div>
     </li>
     <li>
       <span class="num">3</span>
       <div class="desc">
-        <strong>Upload</strong>
+        <strong><a href="/docs/kcp/file-management.md">Upload</a></strong>
         Upload audio, video, and image files to your media library via presigned S3 URLs.
       </div>
     </li>
     <li>
       <span class="num">4</span>
       <div class="desc">
-        <strong>Analyze &amp; tag kilder</strong>
+        <strong><a href="/docs/kcp/media-analysis.md">Analyze &amp; tag kilder</a></strong>
         Metadata extraction (BPM, beat grid, MusicDNA) creates tagged <em>Kilder</em> — reusable media source catalog entries with segment definitions.
       </div>
     </li>
     <li>
       <span class="num">5</span>
       <div class="desc">
-        <strong>Compose a komposition</strong>
+        <strong><a href="/docs/kcp/komposition-format.md">Compose a komposition</a></strong>
         Create a markdown document (<em>komposition</em>) describing your music video: BPM, beat timings, visual tracks, and which kilder to use. Compose via natural-language chat or the CRUD API directly.
       </div>
     </li>
     <li>
       <span class="num">6</span>
       <div class="desc">
-        <strong>Build, poll &amp; download</strong>
+        <strong><a href="/docs/kcp/video-build-workflow.md">Build, poll &amp; download</a></strong>
         Submit the komposition for rendering. Poll job status (<code>PENDING → RUNNING → SUCCEEDED</code>) and download the finished <code>.mp4</code>.
       </div>
     </li>
@@ -200,19 +212,36 @@ kli auth/complete &lt;callback-url&gt;</code></pre>
 </section>
 
 <section>
-  <h2>Agent discovery</h2>
-  <p>This site exposes the <strong>Knowledge Context Protocol (KCP)</strong> manifest so that LLM agents can discover the kompo.ai domain, tools, and API automatically.</p>
-  <div class="discovery-grid">
-    <div class="discovery-card">
-      <div class="label">KCP Manifest</div>
-      <div class="value"><a href="/knowledge.yaml">/knowledge.yaml</a></div>
-    </div>
-    <div class="discovery-card">
-      <div class="label">Unit bodies</div>
-      <div class="value"><a href="/docs/kcp/service-overview.md">/docs/kcp/&lt;unit&gt;.md</a></div>
-    </div>
-  </div>
-  <p style="margin-top: 0.75rem; font-size: 0.95rem; color: var(--muted);">Each unit in <code>knowledge.yaml</code> has a <code>path</code> field pointing to its markdown documentation under <code>docs/kcp/</code>. Agents should first fetch <code>/knowledge.yaml</code>, then follow the unit paths.</p>
+  <h2>Get started</h2>
+  <p><code>kli</code> runs on <a href="https://bun.sh">Bun</a>. Until the npm package ships, clone and run directly:</p>
+  <pre><code>git clone https://github.com/StigLau/agent.kompo.se.git
+cd agent.kompo.se &amp;&amp; bun install
+bun src/cli.ts help        # full command reference
+bun src/cli.ts health      # is the API up? is KCP discovery intact?</code></pre>
+  <p>With an account, the first session looks like this — run it from your music/video project directory and let your agent drive:</p>
+  <pre><code>kli init                       # fetch discovery, write AGENTS.md for your agent
+kli auth/url                   # prints a PKCE login URL — open it, log in
+kli auth/complete "&lt;callback-url&gt;"   # paste the full address-bar URL back
+kli upload-analyze track.mp3   # upload + queue BPM/beat-grid analysis
+kli workstate/load-file my-video.kompo.md   # register your komposition
+kli workstate/render-qc        # build, poll to completion, resolve stream URL</code></pre>
+  <p>The full zero-to-first-video walkthrough — including what your agent should do at each step and how to verify the output — is in <a href="/docs/kcp/getting-started.md">Getting started</a>.</p>
+</section>
+
+<section>
+  <h2>How your agent gets oriented — KCP</h2>
+  <p>This site <em>is</em> the machine-readable documentation. The <a href="https://github.com/StigLau/knowledge-context-protocol">Knowledge Context Protocol</a> manifest at <a href="/knowledge.yaml"><code>/knowledge.yaml</code></a> describes the kompo.ai domain as 16 knowledge units. Each unit declares an <code>intent</code> (the question it answers), <code>triggers</code> (phrases that should route to it), a dependency graph, and a <code>path</code> to its markdown body under <a href="/docs/kcp/service-overview.md"><code>/docs/kcp/</code></a>. An agent orients itself in four fetches:</p>
+  <pre><code>1. GET https://agent.kompo.se/knowledge.yaml         # the map: units, intents, triggers, dependencies
+2. Pick units whose intent/triggers match the task    # e.g. "how do I get BPM for a track" → media-analysis
+3. GET https://agent.kompo.se/docs/kcp/&lt;unit&gt;.md      # the territory: workflows, endpoints, formats
+4. GET https://ai.makeshitapp.com/api/tools           # the typed operation manifest, straight from the API</code></pre>
+  <p>You don't have to script that: <strong><code>kli init</code> runs the whole chain</strong> and writes an <code>AGENTS.md</code> context file into your project — tools operations, knowledge units, auth status — and fails closed rather than leaving your agent with partial context. API responses themselves are agent-friendly too: send <code>Accept: text/markdown</code> and GET endpoints return formatted markdown instead of JSON (<a href="/docs/kcp/content-negotiation.md">content negotiation</a>).</p>
+  <p>Start your agent at <a href="/docs/kcp/getting-started.md"><code>getting-started</code></a>, or point it at <a href="/llms.txt"><code>/llms.txt</code></a>.</p>
+</section>
+
+<section>
+  <h2>Proof it works</h2>
+  <p><a href="https://github.com/StigLau/agent.kompo.se/tree/main/scenarios/first-video">scenarios/first-video</a> in the repository is a deterministic 8-stage rails runner plus an LLM playbook covering this exact flow — upload, analyze, compose, build, verify. It has produced a rendered video with duration, streams, and resolution independently checked by <code>verify.ts</code>.</p>
 </section>
 
 <section>
@@ -220,6 +249,8 @@ kli auth/complete &lt;callback-url&gt;</code></pre>
   <ul class="links-list">
     <li><a href="https://github.com/StigLau/agent.kompo.se">GitHub repository</a> — source code, issues, roadmap</li>
     <li><a href="https://ai.makeshitapp.com">kompo.ai web app</a> — production frontend</li>
+    <li><a href="/docs/kcp/getting-started.md">Getting started</a> — the full zero-to-first-video walkthrough</li>
+    <li><a href="/llms.txt">/llms.txt</a> — plain-text entry point for agents and crawlers</li>
   </ul>
 </section>
 

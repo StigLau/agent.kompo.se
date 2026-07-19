@@ -30,7 +30,7 @@ For LLM mode, make a scratch project directory, hand the LLM
 same `fixtures.json` calibration data. Verify an output independently with:
 
 ```bash
-bun scenarios/first-video/verify.ts output.mp4 --expect-duration <seconds> --tolerance 0.5 --resolution 1280x720
+bun scenarios/first-video/verify.ts output.mp4 --expect-duration <seconds> --tolerance 0.5 --resolution 1920x1080
 ```
 
 The expected seconds are the sum of `beats × 60 / measured BPM` for the two
