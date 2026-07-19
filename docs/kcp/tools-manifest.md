@@ -4,12 +4,7 @@ The tools manifest is a machine-readable description of every callable API opera
 HTTP method, path, input schema, and response shape. It is the canonical reference for
 what the kompo.ai API accepts and returns.
 
-The manifest is served at the tools discovery endpoint:
-
-- **Production**: `https://ai.makeshitapp.com/api/tools`
-- **Test**: `https://api.test.ai.makeshitapp.com/api/tools`
-
-Agents should
+The manifest is served at `https://ai.makeshitapp.com/api/tools`. Agents should
 fetch this to build a complete, typed picture of available operations without needing
 to scrape documentation.
 

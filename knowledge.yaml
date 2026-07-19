@@ -1,7 +1,7 @@
 kcp_version: "0.22"
 project: kompo.ai
 version: 1.0.0
-updated: 2026-07-12
+updated: 2026-07-19
 links:
   web_manifest: /knowledge.yaml
 
@@ -38,6 +38,20 @@ units:
       - "how does kompo.ai work"
       - "what workflows are supported"
       - "give me an overview of this service"
+
+  - id: getting-started
+    path: docs/kcp/getting-started.md
+    intent: "How does a new user + LLM agent go from nothing to a first rendered music video with kli?"
+    scope: global
+    audience: [human, agent]
+    validated: 2026-07-19
+    depends_on: [service-overview, authentication]
+    triggers:
+      - "how do I get started"
+      - "first video walkthrough"
+      - "how do I set up kli"
+      - "zero to rendered video"
+      - "onboarding"
 
   - id: authentication
     path: docs/kcp/authentication.md
@@ -317,4 +331,10 @@ relationships:
     type: context
   - from: media-analysis
     to: komposition-format
+    type: context
+  - from: service-overview
+    to: getting-started
+    type: context
+  - from: getting-started
+    to: media-analysis
     type: context

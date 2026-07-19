@@ -2,7 +2,7 @@
   "env": "sandbox-use2",
   "visualFallback": {
     "fileId": "3W2t8smx5FSY2kYb",
-    "note": "pre-uploaded solid background on sandbox-use2 (110726-Solid_Black_Background_Completely_Black.png), bypasses broken Remotion render (kompo.ai#2199) until fixed. Previous fileId 57900857-fdd6-41c3-a968-673a99c33023 no longer resolves (2026-07-18) — library record gone."
+    "note": "pre-uploaded solid background on sandbox-use2 (110726-Solid_Black_Background_Completely_Black.png); bypasses the currently unavailable Remotion render path. Remove this key to restore the Remotion visual. Previous fileId 57900857-fdd6-41c3-a968-673a99c33023 no longer resolves (2026-07-18) — library record gone."
   },
   "tracks": [
     {

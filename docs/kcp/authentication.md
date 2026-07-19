@@ -60,12 +60,12 @@ kli auth/refresh
 
 ## Environments
 
-Each environment (production and test) has its **own Cognito user pool**. You must log in
-separately for each environment using the `--env` flag:
+Each deployment environment has its **own Cognito user pool**, so login is per-environment
+using the `--env` flag (default `prod`):
 
 ```bash
-kli --env prod auth/url      # Log in to production
-kli --env test auth/url      # Log in to test (separate user pool)
+kli auth/url                 # Log in to the default environment (production)
+kli --env <env> auth/url     # Log in to a different environment
 ```
 
 Tokens are stored per-environment in `~/.kompo/auth-<env>.json`.

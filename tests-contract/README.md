@@ -11,7 +11,7 @@ The suite is split into two independent entry points:
 
 ## Prerequisites
 
-1. **Invitation account** — you must have an account on the kompo.ai test environment (`https://test.ai.makeshitapp.com`).
+1. **Invitation account** — you must have an account on the kompo.ai test environment.
 2. **Auth token store** — run these commands once to log in:
 
    ```bash
