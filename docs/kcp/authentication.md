@@ -8,6 +8,17 @@ obtained through AWS Cognito.
 Kompo.ai accounts are **invitation-only**. An existing user must invite you before you can
 create an account.
 
+## Roles
+
+The ID token carries a `cognito:groups` claim — the role(s) your account was invited with
+(e.g. `viewer`, `producer`, `admin`). Every authenticated account can upload media and
+request analysis regardless of role, but **creating a komposition** (`POST /api/kompositions`,
+and the `kli workstate/load-file` step that leads to it) requires **producer** role — role
+below that gets a `401 InsufficientPermissions`. `kli auth/status` and the `auth/complete`
+output show your role(s) and warn if you're below producer. Role is assigned by whoever
+invites you and isn't self-service — ask them to re-invite you with producer role, or (if
+they're an admin) have them grant it directly.
+
 ## Login flow (PKCE paste-back via kli CLI)
 
 Use the `@kompo/kli` CLI to authenticate:
