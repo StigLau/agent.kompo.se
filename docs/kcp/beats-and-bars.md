@@ -117,10 +117,18 @@ directions, so the incoming song enters on its highs and the crossover lands on 
 **Multiple songs playing at once during a transition is the intent, not a mistake.** Any
 guidance that says "there should be only one song" is superseded.
 
-What that means for authoring today: V3's `audio_tracks` is an array and multiple entries
-are valid (see [komposition-v3](komposition-v3.md), Worked Example B), so *layering* is
-expressible. The filter sweep that makes a transition sound like a DJ transition is not —
-see the limits section below.
+This is implemented, and it has a dedicated construct: **`## Overlay Segments`** in V3 (see
+[komposition-v3](komposition-v3.md)). It declares a window in which two or more sources play
+simultaneously, authored **entirely in beats** — `startBeat`, `durationBeats`, per-track
+`sourceBeat`, and a `transition` with `inDurationBeats` / `outDurationBeats`.
+
+The opposed filter sweep is part of it and is applied for you: the outgoing track gets a
+descending lowpass while the incoming track gets a descending highpass, so the incoming song
+enters on its highs exactly as described above. You specify the crossfade in beats; you do
+not author filters.
+
+Use that construct for a transition rather than overlapping two `## Audio` sections — and do
+not cover the crossfade zone in both, or the audio double-plays.
 
 ## Video segments stretch to their target length
 
@@ -130,11 +138,11 @@ they occupy. The bar count is the fixed thing; the clip accommodates it.
 A segment may instead be covered by a still image, or by a Remotion-provided sequence
 (`source-generated` in V1/V2, `{file:remotion:...}` in V3).
 
-> **Verify before relying on this.** [komposition-v3](komposition-v3.md) currently
-> documents the opposite constraint for V3 clips — source-range duration must equal
-> timeline-range duration or the build fails. Treat stretch-to-fit as the intended model
-> and the V3 constraint as the documented current behavior, and check against a real render
-> before depending on either.
+This is implemented, not aspirational: a V3 clip whose source duration differs from its
+timeline duration is time-stretched to fill the slot — video by rescaling presentation
+timestamps, audio via rubberband. See
+[komposition-v3 § Duration constraints](komposition-v3.md). State the bar span you want and
+let the clip accommodate it rather than pre-trimming sources to length.
 
 ## Music rendering is a separate step from video layering
 
@@ -142,10 +150,12 @@ Rendering the music is its own stage: it produces an audio file — `.flac` or `
 format is not settled — and it is a **separate cache boundary** from the ffmpeg video
 layering that follows.
 
-This separation is part of the model. It is not currently visible in the public job
-contract, which exposes a single `video_build` job type — see
-[video-build-workflow](video-build-workflow.md). Do not write code that assumes a separate
-audio-render job exists until it is documented.
+This separation is part of the model. **It is not documented in this client** — the job
+contract described in [video-build-workflow](video-build-workflow.md) exposes a single
+`video_build` type, and whether a separately addressable audio-render stage exists on the
+server has not been verified from here. Treat that as a gap in this documentation rather than
+as evidence the stage does not exist, and do not build against a separate audio-render job
+until its contract is confirmed.
 
 ## The schema is the contract
 
@@ -180,20 +190,26 @@ Before writing a single line of komposition markdown:
 5. **Lay out the timeline in beats**, cumulative from 0.
 6. **Author it.** No millisecond literals you computed yourself.
 
-## What this model expresses that the format does not accept yet
+## Where each part of this model lives
 
-Stated plainly so it is not mistaken for available behavior:
-
-| Intent | Status today |
+| Intent | Where it is expressed |
 |---|---|
-| Master BPM different from every source's native BPM, system reconciles | **Not expressible in V1/V2.** One global BPM per document, no per-source native-tempo field, no audio time-stretch to master tempo. |
-| Reference a source by segment name (`"car chase"`) in a komposition | **No syntax.** Kompositions reference sources by file ID. Named segments live on the kilde; nothing links them into a komposition. |
-| DJ crossfade with opposed highpass/lowpass sweeps | **No syntax.** V3 offers `gain_db` per audio track and nothing else. |
-| `bars` as a unit in the document | **Not a wire unit.** Author beats. |
-| Gradual master-tempo ramp | **Not supported.** Illustrative only. |
-| Separate music-render stage and cache boundary | **Not in the public job contract.** |
-| Video segment stretched to its target length | **Contradicted** by V3's equal-duration constraint. Unresolved. |
+| Video or audio segment stretched to its target length | **Supported.** V3 time-stretches any clip whose source duration differs from its timeline duration — see [komposition-v3](komposition-v3.md). |
+| Master BPM different from a source's native BPM, system reconciles | **Supported in Overlay Segments** via `strategy: "C_STRETCH"` + `sourceBpm`. The plain `## Audio` track format has a single global BPM and no per-track native tempo. |
+| Two or more songs playing at once | **Supported.** The `## Overlay Segments` construct, authored in beats. |
+| DJ crossfade with opposed highpass/lowpass sweeps | **Supported and automatic.** Specify the crossfade in beats; the sweep is applied for you. |
+| Reference a source by segment name rather than by timestamp | **Supported.** `{source:Alias:segment}` in markdown, and `sourceSegmentId` on an Overlay Segment track, resolved against the source's analyzed downbeat grid. Not yet documented in this client — see [sources-workflow](sources-workflow.md). |
+| `bars` as a literal unit token in a document | **Not a unit token.** Positions and lengths are written in `beats`. Think in bars, author beats. |
+| Gradual master-tempo ramp | **Not supported at this stage.** Illustrative only — do not author it. |
+| Separate music-render stage and cache boundary | **Not documented in this client.** The public job contract here exposes `video_build`; whether a separate audio-render stage exists server-side has not been checked from here. |
 
-If you need one of these, say so to the user as a limitation. Do not simulate it by
-precomputing milliseconds — that produces a document that builds, drifts, and gives nobody
-a way to find out why.
+> **A caution about every row above that says "not".** This repo is a client, and it is
+> demonstrably behind the server — several capabilities in this table were documented here as
+> impossible while being fully implemented. **Absence of syntax in this client's docs is not
+> evidence of absence in the API.** Before telling a user something cannot be done, check the
+> tools manifest and the server's own parser guidance; "I cannot find it documented" is a
+> claim you can support, "the platform does not do it" usually is not.
+
+Where something genuinely is not available, say so as a limitation. Do not simulate it by
+precomputing milliseconds — that produces a document that builds, drifts, and gives nobody a
+way to find out why.

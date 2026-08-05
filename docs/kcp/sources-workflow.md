@@ -106,11 +106,19 @@ What matters regardless of syntax:
   or a re-upload needs its own kilde and its own analysis. See
   [source-metadata-approach](source-metadata-approach.md).
 
-Note that a komposition currently references a source by **file ID**, not by segment name
-(see [komposition-format](komposition-format.md)) — there is no syntax today for "play
-segment *car chase* from this kilde". Named segments are still worth capturing: they are how
-the user and their agent talk about the material, and they are what a future reference syntax
-would resolve against.
+Named segments are not merely descriptive. The server supports referencing a source **by
+segment name** rather than by timestamp: a `{source:Alias:segment}` reference in markdown is
+resolved to the underlying file and position, and an Overlay Segment track can name a phrase
+directly instead of giving a file plus a beat offset (see
+[komposition-v3](komposition-v3.md)). Those references resolve against the source file's
+**analyzed downbeat grid** — which is exactly why segment names must be anchored to real bars
+rather than to a guess, and why a source with no downbeat data cannot be referenced this way.
+
+> **Not documented in this client.** The reference syntaxes above are verified against the
+> server's parser, but they have no worked example in these docs, no `kli` command, and no
+> contract test here. Treat the exact spelling as unconfirmed from this side and check against
+> a real build before depending on it. The V1/V2 structure in
+> [komposition-format](komposition-format.md) references sources by file ID.
 
 ### Update and delete
 

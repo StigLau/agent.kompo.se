@@ -110,15 +110,18 @@ A komposition has **one BPM for the whole document** (see [komposition-format](k
 every track's beat positions are converted to time using that single value, not each source's
 own measured tempo.
 
-This is a **current limitation of the V1/V2 format, not the intended model.** The model this
-platform is built around is a master tempo with sources at their own native tempos, reconciled
-by the system — see [beats-and-bars](beats-and-bars.md). The format does not express that yet:
-there is no per-source native-tempo field and no audio time-stretch to master tempo.
+That is a constraint of the **V1/V2 track format**, not of the platform. The model this
+platform is built around — a master tempo drawing on sources at their own native tempos,
+reconciled by the system — **is** supported: V3's `## Overlay Segments` construct lets a track
+declare `strategy: "C_STRETCH"` with its own `sourceBpm` and be time-stretched to the master
+tempo. See [komposition-v3](komposition-v3.md) and [beats-and-bars](beats-and-bars.md).
 
-Until it does, when composing multiple audio kilder with different measured BPMs you must
-either pick one as the document's declared BPM and adjust the other tracks' beat counts to
-compensate, or keep tracks close in tempo. Note also that the server declares a
-`POST /api/multimedia/beat-segments` operation that resolves a beat-based layout across
-**multiple** files against each file's own measured grid — see
+So with multiple audio kilder at different measured BPMs you have two routes: stay in V1/V2
+and either declare the BPM you want the timeline to run at while adjusting the other tracks'
+beat counts, or keep the tracks close in tempo — or use the V3 construct built for exactly
+this and pass each source's measured BPM as its `sourceBpm`.
+
+The server also declares a `POST /api/multimedia/beat-segments` operation that resolves a
+beat-based layout across **multiple** files against each file's own measured grid — see
 [source-metadata-approach](source-metadata-approach.md). It is declared but not yet verified
 from this client.

@@ -48,12 +48,14 @@ The first line MUST be `# Title`. The title becomes the komposition name.
 Contains two subsections: `### Visuals` and `### Audio`.
 
 Both take a list, so **multiple audio entries in one komposition are valid** — sequencing two
-songs one after another is a normal, exercised case. Whether their beat ranges may *overlap*
-(the DJ-style transition described in [beats-and-bars](beats-and-bars.md), where the outgoing
-and incoming songs deliberately play at once) is **not verified** in this format; V3's
-`audio_tracks` array is the documented route for layered audio, see
-[komposition-v3](komposition-v3.md). Overlapping audio here should be confirmed against a real
-render before you rely on it.
+songs one after another is a normal, exercised case.
+
+For a **DJ-style transition** where the outgoing and incoming songs deliberately play at once
+(see [beats-and-bars](beats-and-bars.md)), the supported construct is V3's
+`## Overlay Segments` — see [komposition-v3](komposition-v3.md). It handles the simultaneous
+window, the beat-timed crossfade, and per-track tempo reconciliation. Overlapping two
+`### Audio` entries here is not the documented route for that and should be confirmed against
+a real render before you rely on it.
 
 ### Source References
 Format: `[FILE_ID](source-type) "Human-readable name"`
@@ -177,11 +179,13 @@ A `source-generated` (remotion:*) segment depends on server-side rendering infra
   declared BPM. Either declare the BPM you actually want the timeline to run at and convert
   each track's beat counts to match, or keep the tracks close in tempo.
 
-  **This is a limitation of this format, not the intended model.** A komposition is meant to
-  express a master tempo drawing on sources at their own native tempos, with the system doing
-  the reconciliation — see [beats-and-bars](beats-and-bars.md). V1/V2 has no per-source
-  native-tempo field and no audio time-stretch, so that is not expressible here yet. Tell the
-  user it is a limitation rather than simulating it with hand-computed offsets.
+  **This is a constraint of the V1/V2 track format, not of the platform.** A komposition is
+  meant to express a master tempo drawing on sources at their own native tempos, with the
+  system doing the reconciliation — and that *is* supported, in V3's `## Overlay Segments`
+  construct, where a track declares `strategy: "C_STRETCH"` with its own `sourceBpm` and is
+  time-stretched to the master tempo. See [komposition-v3](komposition-v3.md) and
+  [beats-and-bars](beats-and-bars.md). For multi-tempo material reach for that rather than
+  hand-computing offsets here.
 - **Assuming output resolution is configurable** — there is no resolution field in this format.
   The platform renders at a fixed default resolution; do not build downstream logic that expects
   a specific resolution unless you've confirmed it against a real render.
