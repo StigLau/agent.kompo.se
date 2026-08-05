@@ -122,10 +122,15 @@ This is implemented, and it has a dedicated construct: **`## Overlay Segments`**
 simultaneously, authored **entirely in beats** — `startBeat`, `durationBeats`, per-track
 `sourceBeat`, and a `transition` with `inDurationBeats` / `outDurationBeats`.
 
-The opposed filter sweep is part of it and is applied for you: the outgoing track gets a
-descending lowpass while the incoming track gets a descending highpass, so the incoming song
-enters on its highs exactly as described above. You specify the crossfade in beats; you do
-not author filters.
+The opposed filter sweep is part of it, but it is **opt-in**: set the transition's `eqKill`
+to `bass_swap` and it is generated for you — the outgoing track gets a descending lowpass
+while the incoming track gets a descending highpass, so the incoming song enters on its highs
+exactly as described above. You specify the crossfade in beats; you do not author filters.
+Without `eqKill` you get the volume crossfade only.
+
+The transition is declared once per segment and applies to the **first** track (as outgoing)
+and the **last** track (as incoming). With three or more tracks in one segment, the middle
+ones receive no fade or sweep.
 
 Use that construct for a transition rather than overlapping two `## Audio` sections — and do
 not cover the crossfade zone in both, or the audio double-plays.
@@ -197,7 +202,7 @@ Before writing a single line of komposition markdown:
 | Video or audio segment stretched to its target length | **Supported.** V3 time-stretches any clip whose source duration differs from its timeline duration — see [komposition-v3](komposition-v3.md). |
 | Master BPM different from a source's native BPM, system reconciles | **Supported in Overlay Segments** via `strategy: "C_STRETCH"` + `sourceBpm`. The plain `## Audio` track format has a single global BPM and no per-track native tempo. |
 | Two or more songs playing at once | **Supported.** The `## Overlay Segments` construct, authored in beats. |
-| DJ crossfade with opposed highpass/lowpass sweeps | **Supported and automatic.** Specify the crossfade in beats; the sweep is applied for you. |
+| DJ crossfade with opposed highpass/lowpass sweeps | **Supported, opt-in.** Specify the crossfade in beats and set the transition's `eqKill` to `bass_swap`; the sweep is generated for you. Without it you get the volume crossfade only. |
 | Reference a source by segment name rather than by timestamp | **Supported.** `{source:Alias:segment}` in markdown, and `sourceSegmentId` on an Overlay Segment track, resolved against the source's analyzed downbeat grid. Not yet documented in this client — see [sources-workflow](sources-workflow.md). |
 | `bars` as a literal unit token in a document | **Not a unit token.** Positions and lengths are written in `beats`. Think in bars, author beats. |
 | Gradual master-tempo ramp | **Not supported at this stage.** Illustrative only — do not author it. |
