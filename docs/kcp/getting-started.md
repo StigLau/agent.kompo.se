@@ -105,14 +105,36 @@ Accept: application/json
 ```
 
 The response is flat (no wrapper object, no separate job/status field) and carries `bpm`,
-`confidence`, `method`, `beat1Ms`, `downbeats` (the beat grid), `beats`, and `analyzedAt`.
-Completion criterion: `analyzedAt` is set and `bpm` is finite. A detected BPM at 0.5x or 2x
-the tempo you perceive by ear is a normal octave ambiguity, not an error. See
-[media-analysis](media-analysis.md) for the full field reference and cross-checking advice.
+`confidence`, `method`, `beat1Ms`, `downbeats` (the bar grid), `beats`, and `analyzedAt`.
+Completion criterion: `analyzedAt` is set and `bpm` is finite.
+
+Three things to do with the result before you compose anything:
+
+1. **Take the grid, not just the number.** `downbeats` is the product; the scalar `bpm` is a
+   label. Bar positions are read from the grid, never multiplied out of the BPM — real tracks
+   have intro offsets, which is exactly what `beat1Ms` is telling you.
+2. **Sanity-check the tempo.** A detected BPM at 0.5x or 2x the tempo you perceive by ear is
+   a normal octave ambiguity — pick the reading that matches the bass drum. But for
+   four-on-the-floor material the vocabulary is **2× / 1× / ½× and nothing else**: a
+   disagreement that is none of those means the analysis path is broken, not that the meter is
+   ambiguous. Stop and re-analyze rather than proceeding.
+3. **Note which `fileId` this grid belongs to.** It is valid for that exact audio file only —
+   not for a remaster, a different edit, or a re-upload.
+
+See [media-analysis](media-analysis.md) for the full field reference, and
+[source-metadata-approach](source-metadata-approach.md) for the approach behind all three —
+including why naming a track's segments in the user's own words is part of this step.
 
 ## 6. Write the komposition
 
 Write a markdown komposition using the **measured** BPM from step 5 — never milliseconds.
+
+Start from the user's structure in **bars** — "intro 4 bars, verse 8, refrain 8, outro 4" —
+and convert those *lengths* to beat counts (in 4/4, bars × 4) as you author. Do not compute
+any millisecond or second position yourself; state beats and let the server resolve them.
+[beats-and-bars](beats-and-bars.md) is the full approach, and worth reading before your first
+komposition.
+
 Minimal structure:
 
 ```markdown
@@ -136,7 +158,8 @@ Minimal structure:
 ```
 
 Three rules the platform enforces: use the measured BPM, never milliseconds; one global
-BPM governs beat-to-time conversion across *every* track in the document; reference only
+BPM governs beat-to-time conversion across *every* track in the document (a single fixed
+master tempo — a tempo ramp across the video is **not** supported); reference only
 `fileId`s you have uploaded (or a `source-generated` Remotion visual where available). See
 [komposition-format](komposition-format.md) for the full V1/V2 spec and
 [komposition-v3](komposition-v3.md) for layered/z-ordered compositions.

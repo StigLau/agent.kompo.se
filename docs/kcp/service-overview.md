@@ -17,10 +17,14 @@ The API surface supports six workflow flows:
    S3 URLs.
 4. **Analyze & tag kilder** — create a *kilde* (a metadata-tagged, reusable media source
    with segment definitions) that references your uploaded files. Kilder are the building
-   blocks kompositions reference.
+   blocks kompositions reference. *Tagging* here means capturing the track's **beat grid**
+   and giving its structural parts **human-meaningful names** — the names the user will
+   compose with. See [source-metadata-approach](source-metadata-approach.md).
 5. **Compose a komposition** — create a markdown document (a *komposition*) that describes
    your music video: BPM, beat timings, visual tracks, and which kilder to pull from.
-   You can compose via natural-language chat or the CRUD API directly.
+   You can compose via natural-language chat or the CRUD API directly. The user describes
+   structure in **bars and beats** and the system does the timing arithmetic — see
+   [beats-and-bars](beats-and-bars.md).
 6. **Build, poll & download** — submit the komposition for rendering. Poll the job status
    until it succeeds, then download the finished `.mp4` from the outputs endpoint.
 

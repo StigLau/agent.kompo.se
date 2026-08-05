@@ -4,6 +4,8 @@ Start here:
 - KCP manifest (the map — units, intents, triggers, dependencies): https://agent.kompo.se/knowledge.yaml
 - Getting started (zero to first rendered video): https://agent.kompo.se/docs/kcp/getting-started.md
 - Service overview: https://agent.kompo.se/docs/kcp/service-overview.md
+- Beats and bars (the approach — read this before composing): https://agent.kompo.se/docs/kcp/beats-and-bars.md
+- Source metadata approach (what you need from analysis, and how to know the tempo is right): https://agent.kompo.se/docs/kcp/source-metadata-approach.md
 - Komposition format (wire contract): https://agent.kompo.se/docs/kcp/komposition-format.md
 - Typed API operations: https://ai.makeshitapp.com/api/tools
 - Source & issues: https://github.com/StigLau/agent.kompo.se

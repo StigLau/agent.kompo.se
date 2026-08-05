@@ -66,6 +66,15 @@ type KompoStrictV3 = {
 V3 kompositions can be authored and exchanged in a human-readable markdown format.
 This is the format agents should write.
 
+> **Author in `beats`, even though the examples below are in seconds.** The `s`/`ms` values
+> throughout this unit show the format's full range and make the JSON⇄markdown correspondence
+> legible — they are **not** the recommended authoring unit. A komposition is written in
+> beats and bars; milliseconds are the compiled form the render pipeline consumes. Computing
+> a second or millisecond position yourself from a bar reference is the anti-pattern described
+> in [beats-and-bars](beats-and-bars.md), and a round `ms` literal is its usual tell.
+>
+> Write `timeline 0beats-32beats`, not `timeline 0s-16s`, wherever the position is musical.
+
 ### Format
 
 ```markdown
@@ -96,11 +105,20 @@ This is the format agents should write.
   - `Foregrounds` → `foreground`
 - **`blend`** must match schema enum: `replace` or `alpha_over`.
 - **`timeline`** = output position; **`source`** = slice from source file.
-- **Time units** supported in all positions: `s` (seconds), `ms` (milliseconds), `beats` (resolved via `meta.bpm`).
-  - Beat formula: `beats × (60000 / bpm)` = ms
-  - Example: `16beats` at bpm=120 → 8000ms
+- **Time units** supported in all positions: `beats` (resolved via `meta.bpm` — **prefer this**),
+  `s` (seconds), `ms` (milliseconds).
+  - The server resolves beats for you: `beats × (60000 / bpm)` = ms. Example: `16beats` at
+    bpm=120 → 8000ms.
+  - **This formula is documentation of what the server does, not a step for you to perform.**
+    Write `16beats` and let it resolve. Writing `8000ms` throws away the musical intent and
+    silently bakes in one tempo assumption — see [beats-and-bars](beats-and-bars.md).
 - **Audio sections**: `## Audio: <role> (gain: <N>dB)` — role must be `music`, `voiceover`, or `effect`.
-- One audio section per track. Multiple tracks allowed.
+- One audio section per track. Multiple tracks allowed — this is the documented route for
+  **layered audio**, where more than one song plays at once. Overlapping timeline ranges
+  across audio tracks is the intended DJ-style transition, not a mistake
+  (see [beats-and-bars](beats-and-bars.md)). Note that `gain_db` is the only per-track
+  processing this format exposes: there is **no syntax for the highpass/lowpass filter sweeps**
+  a real crossfade needs. Level-only overlaps are what you can author today.
 - `gain_db` of `0` serializes as `0dB`.
 - `{file:X}` references a library file ID (from `GET /api/files/user`).
 - `{file:remotion:CompositionId}` references a Remotion composition (rendered on-the-fly).
@@ -118,6 +136,14 @@ This is the format agents should write.
 
 V3 does not support time-stretch per clip. The source range duration MUST equal the
 timeline range duration — if they differ, the build fails.
+
+> **Known conflict with the intended model.** A komposition is meant to express "this segment
+> occupies 8 bars" and have the source clip *stretch to fit* — sources vary in length (say 10
+> to 30 seconds) and the bar count is the fixed thing (see [beats-and-bars](beats-and-bars.md)).
+> The equal-duration constraint above is the documented current V3 behavior and contradicts
+> that. Until it is resolved, cover a fixed bar span with a clip you have trimmed to the right
+> length, a still image, or a Remotion `source-generated` sequence — and treat stretch-to-fit
+> as unavailable in V3 rather than assuming either side of this conflict.
 
 ## Worked Example A: Single-layer V3 komposition
 

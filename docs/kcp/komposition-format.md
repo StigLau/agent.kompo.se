@@ -5,8 +5,12 @@ beat timings, visual and audio tracks, and references to kilder (media source as
 The platform parses this markdown, resolves references, and compiles it into a render
 graph. The markdown must follow the exact structure below.
 
-Kompositions are timed in **BPM/beats**, not milliseconds. Beat-to-time conversion uses:
-`duration_seconds = beats × 60 / BPM`.
+Kompositions are timed in **BPM/beats**, not milliseconds — and not seconds either.
+
+> **Start at [beats-and-bars](beats-and-bars.md).** This unit is the syntax. That one is the
+> approach: think in bars, author in beats, and never precompute a millisecond position
+> yourself. The conversion formula below is for *verifying a finished render*, not for
+> placing anything.
 
 ## Required Structure
 
@@ -43,6 +47,14 @@ The first line MUST be `# Title`. The title becomes the komposition name.
 ### Tracks Section (Required)
 Contains two subsections: `### Visuals` and `### Audio`.
 
+Both take a list, so **multiple audio entries in one komposition are valid** — sequencing two
+songs one after another is a normal, exercised case. Whether their beat ranges may *overlap*
+(the DJ-style transition described in [beats-and-bars](beats-and-bars.md), where the outgoing
+and incoming songs deliberately play at once) is **not verified** in this format; V3's
+`audio_tracks` array is the documented route for layered audio, see
+[komposition-v3](komposition-v3.md). Overlapping audio here should be confirmed against a real
+render before you rely on it.
+
 ### Source References
 Format: `[FILE_ID](source-type) "Human-readable name"`
 
@@ -56,12 +68,21 @@ Format: `[FILE_ID](source-type) "Human-readable name"`
 
 ### Beat Timing
 Each source entry has:
-- **Start**: `N beats` — when this source begins (0 = start of video)
+- **Start**: `N beats` — when this source begins (beats are **0-indexed**; 0 = start of video)
 - **End**: `M beats` — when this source ends
 
-Beats are converted to time using BPM: `duration_seconds = (end - start) * 60 / BPM`
+`beats` is the only timing unit this format accepts. **There is no `bars` unit** — think in
+bars, then write the beat count (in 4/4, bars × 4). Bar *lengths* convert safely by
+multiplication; bar *positions inside a source track* do not — those come from that track's
+analyzed downbeat grid. See [beats-and-bars](beats-and-bars.md).
 
-Example at 135 BPM: 8 beats = 3.56 seconds, 32 beats = 14.22 seconds.
+The server converts beats to time using the document's BPM:
+`duration_seconds = (end - start) * 60 / BPM`. At 135 BPM, 8 beats is 3.56 seconds and 32
+beats is 14.22 seconds.
+
+**Use that formula to check a rendered output's duration, not to author positions.** If you
+find yourself writing a millisecond or second literal you computed from a bar number, stop —
+that is the precomputation anti-pattern described in [beats-and-bars](beats-and-bars.md).
 
 ## Complete Example (Build-Ready)
 
@@ -145,13 +166,22 @@ A `source-generated` (remotion:*) segment depends on server-side rendering infra
 - Overlapping visual beat ranges → unexpected stacking behavior
 - No audio track → video renders but is silent
 - Sending a `name` field in the create request → rejected (name is extracted from H1)
+- **Precomputing millisecond or second positions** — if a value in this document is a round
+  number of milliseconds you calculated from a bar reference, it is almost certainly wrong.
+  State beats; let the server resolve them. See [beats-and-bars](beats-and-bars.md).
 - **Mixing tracks of different tempo without accounting for the single global BPM** — there is
   only ONE `BPM` value per komposition, and every track's beat positions (visual and audio)
   are converted to time using that one value. If you compose two audio kilder with different
   measured tempos (see [media-analysis](media-analysis.md)), beat counts authored against a
   track's own native BPM will play at the wrong speed once resolved against the document's
   declared BPM. Either declare the BPM you actually want the timeline to run at and convert
-  each track's beat counts to match, or avoid mixing tracks whose tempos diverge significantly.
+  each track's beat counts to match, or keep the tracks close in tempo.
+
+  **This is a limitation of this format, not the intended model.** A komposition is meant to
+  express a master tempo drawing on sources at their own native tempos, with the system doing
+  the reconciliation — see [beats-and-bars](beats-and-bars.md). V1/V2 has no per-source
+  native-tempo field and no audio time-stretch, so that is not expressible here yet. Tell the
+  user it is a limitation rather than simulating it with hand-computed offsets.
 - **Assuming output resolution is configurable** — there is no resolution field in this format.
   The platform renders at a fixed default resolution; do not build downstream logic that expects
   a specific resolution unless you've confirmed it against a real render.
