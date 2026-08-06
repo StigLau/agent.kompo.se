@@ -233,7 +233,7 @@ export function renderAgentContext(input: AgentContextInput): string {
   lines.push('');
   lines.push('- **kilde** (pl. **kilder**): a reusable multimedia source asset — audio track, video clip, or image source — with segment definitions and file-location fallback chains.');
   lines.push(
-    '- **komposition**: a markdown document that describes a music video — written in beats, not milliseconds. Contains metadata, BPM, beat timings, and kilde references.',
+    '- **komposition**: a markdown document that describes a music video — written in beats, not milliseconds. You describe structure in bars and beats; the platform does the timing arithmetic. Contains metadata, BPM, beat timings, and kilde references.',
   );
 
   return lines.join('\n') + '\n';

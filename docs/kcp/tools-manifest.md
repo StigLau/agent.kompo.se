@@ -30,9 +30,24 @@ The tools manifest describes operations across these groups:
 | Files | `POST /api/upload/*`, `GET /api/files/user`, `DELETE /api/files/{id}` |
 | Generation | `POST /api/generate-image`, `POST /api/multimedia/tasks` |
 | Staging | `GET /api/multimedia/staging`, `POST /api/multimedia/promote`, `GET /api/multimedia/tasks/{taskId}` |
+| Analysis & beat grid | `GET /api/multimedia/{fileId}/analysis`, `GET /api/multimedia/{fileId}/beat-grid`, `POST /api/multimedia/beat-segments`, `POST /api/execute-tool` |
 | Video build | `POST /api/create-video-from-komposition`, `POST /api/jobs` |
 | Jobs | `GET/DELETE /api/jobs/*`, `GET /api/jobs` |
 | Status | `GET /api/video/status/{jobId}`, `GET /api/jobs/{jobId}/status` |
 | Outputs | `GET /api/outputs` |
 | Library | `GET /api/library/search`, `GET /api/library/komposition/{id}/multimedia`, `POST /api/library/prune` |
 | Chat messages | `GET/POST/DELETE /api/chat-messages/*` |
+
+## Operations the manifest declares that this client does not yet cover
+
+The manifest is the server's declaration, and it currently lists beat-grid operations that
+have **no `kli` command and no verified response shape** in this repo — notably
+`GET /api/multimedia/{fileId}/beat-grid` (the dedicated canonical beat-grid contract) and
+`POST /api/multimedia/beat-segments` (which resolves a beat-based layout into timeline
+positions against each file's measured grid, across multiple files). They matter because they
+are the mechanism that removes the need for agent-side BPM arithmetic — see
+[source-metadata-approach](source-metadata-approach.md).
+
+Reaching them today requires a raw authenticated request. **Verify the response before
+depending on field names**; a mismatch between the manifest and real behavior is a finding
+worth reporting, not something to code around.

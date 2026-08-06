@@ -160,7 +160,7 @@
 - [FILE_ID](source-audio) "Track"
   - Start: 0 beats
   - End: 16 beats</code></pre>
-  <p class="caption">Beats, not milliseconds — <code>duration = beats × 60 / BPM</code>. Full spec: <a href="/docs/kcp/komposition-format.md">komposition-format.md</a>.</p>
+  <p class="caption">Beats and bars, not milliseconds — you describe structure (&ldquo;intro 4 bars, verse 8&rdquo;) and the platform does the timing arithmetic. The approach: <a href="/docs/kcp/beats-and-bars.md">beats-and-bars.md</a>. Full spec: <a href="/docs/kcp/komposition-format.md">komposition-format.md</a>.</p>
 </section>
 
 <section>
@@ -230,7 +230,7 @@ kli workstate/render-qc        # build, poll to completion, resolve stream URL</
 
 <section>
   <h2>How your agent gets oriented — KCP</h2>
-  <p>This site <em>is</em> the machine-readable documentation. The <a href="https://github.com/StigLau/knowledge-context-protocol">Knowledge Context Protocol</a> manifest at <a href="/knowledge.yaml"><code>/knowledge.yaml</code></a> describes the kompo.ai domain as 16 knowledge units. Each unit declares an <code>intent</code> (the question it answers), <code>triggers</code> (phrases that should route to it), a dependency graph, and a <code>path</code> to its markdown body under <a href="/docs/kcp/service-overview.md"><code>/docs/kcp/</code></a>. An agent orients itself in four fetches:</p>
+  <p>This site <em>is</em> the machine-readable documentation. The <a href="https://github.com/StigLau/knowledge-context-protocol">Knowledge Context Protocol</a> manifest at <a href="/knowledge.yaml"><code>/knowledge.yaml</code></a> describes the kompo.ai domain as 18 knowledge units. Each unit declares an <code>intent</code> (the question it answers), <code>triggers</code> (phrases that should route to it), a dependency graph, and a <code>path</code> to its markdown body under <a href="/docs/kcp/service-overview.md"><code>/docs/kcp/</code></a>. An agent orients itself in four fetches:</p>
   <pre><code>1. GET https://agent.kompo.se/knowledge.yaml         # the map: units, intents, triggers, dependencies
 2. Pick units whose intent/triggers match the task    # e.g. "how do I get BPM for a track" → media-analysis
 3. GET https://agent.kompo.se/docs/kcp/&lt;unit&gt;.md      # the territory: workflows, endpoints, formats
