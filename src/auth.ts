@@ -165,6 +165,56 @@ export function decodeIdTokenEmail(idToken: string): string | undefined {
   }
 }
 
+/**
+ * Decode the `cognito:groups` claim from an ID token — the roles Cognito
+ * granted this user (e.g. ['producer', 'viewer']).
+ *
+ * Mirrors the server's own normalization (kompo.ai lambda-enhanced/shared/auth.ts
+ * getGroupsFromEvent): Cognito can return groups as a string "a,b,c", an array
+ * ["a","b","c"], or omit the claim entirely. Returns [] on any decode failure
+ * or absent claim — this is informational only, never a security decision
+ * (the server is the sole authority on role enforcement).
+ */
+export function decodeIdTokenGroups(idToken: string): string[] {
+  try {
+    const payload = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64').toString());
+    const groups = payload['cognito:groups'];
+    if (!groups) return [];
+    if (typeof groups === 'string') return groups.split(',');
+    if (Array.isArray(groups)) return groups;
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Format role/group info for auth output (auth/complete, auth/status).
+ * Purely presentational — surfaces what the token already says, never blocks
+ * or exits non-zero. The server (`requireRole` in kompo.ai) is the sole
+ * authority on whether an action is actually permitted.
+ */
+export function formatRoleInfo(groups: string[]): string[] {
+  const lines: string[] = [];
+  if (groups.length === 0) {
+    lines.push('- Roles: (none)');
+  } else if (groups.length === 1) {
+    lines.push(`- Role: ${groups[0]}`);
+  } else {
+    lines.push(`- Roles: ${groups.join(', ')}`);
+  }
+
+  const lower = groups.map((g) => g.toLowerCase());
+  if (!lower.includes('producer') && !lower.includes('admin')) {
+    const have = groups.length > 0 ? groups.join('/') : 'no';
+    lines.push(
+      `⚠ You have ${have} access — composing kompositions requires producer role. Contact whoever invited you to request an upgrade.`,
+    );
+  }
+
+  return lines;
+}
+
 // ---------------------------------------------------------------------------
 // File I/O
 // ---------------------------------------------------------------------------
@@ -344,9 +394,11 @@ export async function cmdAuthComplete(env: string, input: string | undefined): P
   deleteFileIfExists(pkceFile);
 
   const email = decodeIdTokenEmail(tokens.idToken);
+  const groups = decodeIdTokenGroups(tokens.idToken);
   console.log(`# Kompo Auth Complete (${env})`);
   console.log('');
   console.log(`- Authenticated as: ${email || '(unknown — could not decode idToken)'}`);
+  for (const line of formatRoleInfo(groups)) console.log(line);
   console.log(`- Token expires: ${new Date(tokens.expiresAt).toISOString()}`);
   console.log(`- Saved to: ~/.kompo/auth-${env}.json`);
 }
@@ -465,6 +517,7 @@ export function getStoredIdToken(env: string): string | null {
 export function getAuthStatus(env: string): {
   hasTokens: boolean;
   email?: string;
+  groups?: string[];
   expiresAt?: number;
   expired: boolean;
 } {
@@ -475,9 +528,11 @@ export function getAuthStatus(env: string): {
   }
   const expired = tokens.expiresAt <= Date.now();
   const email = decodeIdTokenEmail(tokens.idToken);
+  const groups = decodeIdTokenGroups(tokens.idToken);
   return {
     hasTokens: true,
     email,
+    groups,
     expiresAt: tokens.expiresAt,
     expired,
   };

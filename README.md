@@ -5,7 +5,7 @@
 ## The flows
 
 1. **[Bootstrap](docs/kcp/tools-manifest.md)** — `kli init` fetches the knowledge manifest and writes agent-readable project context
-2. **[Authenticate](docs/kcp/authentication.md)** — PKCE paste-back login, no cloud credentials needed
+2. **[Authenticate](docs/kcp/authentication.md)** — PKCE paste-back login, no cloud credentials needed (composing in step 5 additionally requires producer role — see `auth/status`)
 3. **[Upload](docs/kcp/file-management.md)** — audio and video content
 4. **[Analyze & tag](docs/kcp/media-analysis.md)** — metadata extraction (BPM, beat grid, MusicDNA) → tagged **Kilder** (source catalog entries)
 5. **[Compose](docs/kcp/komposition-format.md)** — create kompositions from your kilder, written in beats, not milliseconds

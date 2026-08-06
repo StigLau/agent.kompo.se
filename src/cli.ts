@@ -230,7 +230,7 @@ async function main() {
     return;
   }
   if (command === 'auth/status') {
-    const { getAuthStatus } = await import('./auth');
+    const { getAuthStatus, formatRoleInfo } = await import('./auth');
     const status = getAuthStatus(env);
     console.log(`# Auth Status (${env})`);
 
@@ -243,6 +243,7 @@ async function main() {
 
     console.log('- source: user auth');
     console.log(`- identity: ${status.email || '(unknown)'}`);
+    for (const line of formatRoleInfo(status.groups || [])) console.log(line);
     console.log(
       `- expires: ${status.expiresAt ? new Date(status.expiresAt).toISOString() : 'unknown'}${status.expired ? ' ⚠ EXPIRED' : ''}`,
     );

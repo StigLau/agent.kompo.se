@@ -63,7 +63,12 @@ bun src/cli.ts auth/complete "<full-callback-url>"
 ```
 
 Tokens are stored in `~/.kompo/auth-<env>.json`, mode `0600`, and refresh automatically.
-Check `bun src/cli.ts auth/status` at any point to see identity and token expiry.
+Check `bun src/cli.ts auth/status` at any point to see identity, role(s), and token expiry.
+
+**Role matters for §6-7.** Every authenticated account can upload and analyze audio (§4-5),
+but *composing* a komposition (§6-7) additionally requires **producer** role. Role is set by
+whoever invites you and isn't self-service; `auth/status` (and the `auth/complete` output)
+shows your role and warns if it's below producer.
 
 Common failures and fixes:
 
@@ -199,6 +204,7 @@ checker that does exactly this against a downloaded `.mp4`.
 | Server rejects the komposition format | Missing section, wrong BPM field, or a `fileId` not yet in your library | Re-check against [komposition-format](komposition-format.md) exactly — no missing sections, valid `fileId`s |
 | Build job reaches `FAILED` | Invalid komposition, missing file reference, or a server-side render error | Inspect `kli jobs/<id>` for the error detail |
 | `render-qc` times out | Render queue backed up, or job stuck | Check status manually with `kli job-status/<id>`; if still `RUNNING`, wait and retry |
+| `workstate/load-file` or the compose step returns `401 InsufficientPermissions` | Your account's role is below **producer** (upload/analysis don't check role, but composing does) | Run `auth/status` to confirm your role; ask whoever invited you to re-invite with producer role, or (if they're an admin) have them grant it directly |
 
 ## The reproducible reference
 
