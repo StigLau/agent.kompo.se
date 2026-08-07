@@ -67,11 +67,9 @@ V3 kompositions can be authored and exchanged in a human-readable markdown forma
 This is the format agents should write.
 
 > **Author in `beats`, even though the examples below are in seconds.** The `s`/`ms` values
-> throughout this unit show the format's full range and make the JSON⇄markdown correspondence
-> legible — they are **not** the recommended authoring unit. A komposition is written in
-> beats and bars; milliseconds are the compiled form the render pipeline consumes. Computing
-> a second or millisecond position yourself from a bar reference is the anti-pattern described
-> in [beats-and-bars](beats-and-bars.md), and a round `ms` literal is its usual tell.
+> show the format's full range and make the JSON⇄markdown correspondence legible — they are
+> **not** the recommended authoring unit. Write musical positions in beats and bars; see
+> [beats-and-bars](beats-and-bars.md).
 >
 > Write `timeline 0beats-32beats`, not `timeline 0s-16s`, wherever the position is musical.
 
@@ -130,28 +128,11 @@ This is the format agents should write.
 | `16beats` | 120 | 8000ms |
 | `4beats` | 140 | 1714ms |
 
-### Duration constraints — clips stretch to fit
+### Source and timeline ranges
 
-**A clip whose source duration differs from its timeline duration is time-stretched to fill
-the slot.** You do not have to pre-trim sources to an exact length: state the timeline range
-the clip should occupy and the source range to draw from, and the compiler scales it to fit.
-
-- **Video** is stretched by scaling presentation timestamps, then trimmed to the exact
-  timeline duration. A source longer than its slot speeds up; a shorter one slows down.
-- **Audio** is time-stretched with rubberband, which preserves transients, falling back to a
-  simpler tempo filter where rubberband is unavailable.
-
-The tolerance is about 10ms — a difference smaller than that is treated as no stretch.
-
-This is what makes the model in [beats-and-bars](beats-and-bars.md) work: **the bar count is
-the fixed thing and the clip accommodates it.** Sources varying from 10 to 30 seconds can all
-fill the same 8-bar slot.
-
-> **Earlier versions of this document stated the opposite** — that source and timeline
-> durations must be equal or the build fails. That described the compiler's behavior before
-> per-clip stretch was implemented, and it is no longer true. Corrected against the active V3
-> compile path and its tests; not yet exercised end-to-end from this client, so confirm
-> against a real render before depending on an extreme stretch ratio.
+`timeline` is the output range and `source` is the selected range from the source file. Use
+beats for musical positions. Confirm a composition against a real render before relying on a
+particular source-to-timeline duration relationship.
 
 ## Worked Example A: Single-layer V3 komposition
 
@@ -260,7 +241,8 @@ It is expressed as an `## Overlay Segments` section containing a JSON array:
     "type": "crossfade",
     "outDurationBeats": 32,
     "inDurationBeats": 32,
-    "curve": "equal_power"
+    "curve": "equal_power",
+    "eqKill": "bass_swap"
   }
 }]
 ```
@@ -271,7 +253,7 @@ It is expressed as an `## Overlay Segments` section containing a JSON array:
 | `durationBeats` | Length of the simultaneous-playback window |
 | `masterBpm` | BPM for beat→ms conversion (usually the same as `meta.bpm`) |
 | `tracks[]` | **At least 2.** `tracks[0]` is outgoing (fades out); the last is incoming (fades in) |
-| `transition` | `outDurationBeats` / `inDurationBeats` fade lengths, `curve: "equal_power"` |
+| `transition` | `outDurationBeats` / `inDurationBeats` fade lengths, `curve: "equal_power"`; optional `eqKill: "bass_swap"` |
 
 ### Per-track tempo reconciliation
 
@@ -279,9 +261,8 @@ Each track carries a `strategy`, and this is where a source at its own native te
 reconciled to the master:
 
 - **`A_NATIVE`** — play at the source's own tempo, no tempo change.
-- **`C_STRETCH`** — time-stretch the source from its native BPM to `masterBpm` via
-  rubberband. **`sourceBpm` is required**; without a valid one the track degrades to
-  `A_NATIVE` rather than failing.
+- **`C_STRETCH`** — reconcile the source's native tempo to `masterBpm`; provide its
+  `sourceBpm`.
 
 So a 130 BPM master drawing on a 132 BPM song is expressible here: give that track
 `strategy: "C_STRETCH"` and `sourceBpm: 132`.
@@ -294,20 +275,14 @@ formula assumes the file has no intro and is less accurate. This is the same pri
 [beats-and-bars](beats-and-bars.md): a position inside a source comes from that file's
 measured grid, not from arithmetic.
 
-### The filter sweep is automatic
+### Optional EQ treatment
 
-A crossfade is not level-only. The outgoing track receives a descending lowpass (it loses its
-highs) while the incoming track receives a descending highpass (it enters on its highs, with
-its low end held back and then released) — filters moving in opposite directions across the
-window. **You do not author the filters**; specify the crossfade and the sweep is applied.
+Set `eqKill: "bass_swap"` in `transition` to opt into the crossfade's EQ treatment. Omit it
+for a volume crossfade only.
 
-> **Do not also cover the crossfade zone in `## Audio`.** The audio tracks should carry only
-> the solo sections before and after; the overlay segment owns the overlap. Covering it in
-> both double-plays the audio.
-
-> **Status: verified against the server's schema, compiler, and parser guidance — not yet
-> exercised from this client.** There is no `kli` command for it and no contract test here.
-> Confirm against a real render before depending on the exact field set.
+> Do not also cover an overlay window in `## Audio`; use the overlay segment for that window.
+> There is no `kli` shortcut for Overlay Segments, so confirm the exact field set against a
+> real render before depending on it.
 
 ## Clip-line Props (Remotion)
 
@@ -330,8 +305,6 @@ using alpha compositing. In the markdown format, use a layer labelled `Overlays`
 ## Common Mistakes
 
 - Non-consecutive z values (e.g., layers 0 and 2 with no layer 1) → validation fails
-- ~~Timeline and source durations differ → build fails (no time-stretch)~~ — **no longer true.**
-  Differing durations are time-stretched to fit; see Duration constraints above.
 - Missing `duration` in `## Meta` → parser cannot determine total length
 - Overlay clips on a `blend: replace` layer → transparency rendered as black
 - Using V2 markdown syntax (`[FILE_ID](source-type)`) in a V3 komposition → parse failure

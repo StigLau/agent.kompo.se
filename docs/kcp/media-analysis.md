@@ -110,16 +110,12 @@ A komposition has **one BPM for the whole document** (see [komposition-format](k
 every track's beat positions are converted to time using that single value, not each source's
 own measured tempo.
 
-That is a constraint of the **V1/V2 track format**, not of the platform. The model this
-platform is built around — a master tempo drawing on sources at their own native tempos,
-reconciled by the system — **is** supported: V3's `## Overlay Segments` construct lets a track
-declare `strategy: "C_STRETCH"` with its own `sourceBpm` and be time-stretched to the master
-tempo. See [komposition-v3](komposition-v3.md) and [beats-and-bars](beats-and-bars.md).
+This is a V1/V2 format constraint. For V3's alternative, see the entered
+`## Overlay Segments` format in [komposition-v3](komposition-v3.md).
 
-So with multiple audio kilder at different measured BPMs you have two routes: stay in V1/V2
-and either declare the BPM you want the timeline to run at while adjusting the other tracks'
-beat counts, or keep the tracks close in tempo — or use the V3 construct built for exactly
-this and pass each source's measured BPM as its `sourceBpm`.
+With multiple audio kilder at different measured BPMs, either stay in V1/V2 and declare the
+BPM you want the timeline to run at while adjusting the other tracks' beat counts, or keep the
+tracks close in tempo. Use V3 only through its documented Overlay Segments format.
 
 The server also declares a `POST /api/multimedia/beat-segments` operation that resolves a
 beat-based layout across **multiple** files against each file's own measured grid — see

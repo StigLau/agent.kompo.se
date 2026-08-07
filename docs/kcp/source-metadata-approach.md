@@ -133,15 +133,6 @@ speak beats, the server speaks milliseconds. Prefer it over computing positions 
 and note that it accepts multiple `file_ids`, so a layout spanning more than one song is a
 first-class input rather than a workaround.
 
-The grid is also what **named segment references resolve against** when a komposition names a
-phrase of a source instead of a file plus an offset (see
-[sources-workflow](sources-workflow.md)) — a source with no downbeat data cannot be referenced
-that way at all. The server's own authoring guidance makes the same point from the other side:
-where a construct accepts either a beat index or an exact position, it recommends reading the
-downbeat grid and passing the real downbeat, **because the beat-index formula assumes the file
-has no intro**. That is this unit's central claim, stated by the system that has to render the
-result.
-
 > **Status: declared, not verified.** These three entries are read from the server's own
 > tools manifest. Their exact response shapes have **not** been confirmed against a live
 > authenticated call from this client, and there is no `kli` command for any of them yet —

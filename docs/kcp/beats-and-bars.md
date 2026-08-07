@@ -32,10 +32,9 @@ State positions the way the music is counted:
 Not `starts at 59076ms`. Not `starts at 59.08s`. Seconds are not the unit either — they are
 just milliseconds with fewer digits.
 
-Exact milliseconds **do** exist and they matter: they are what gets handed to ffmpeg, and
-they are an essential part of the caching strategy. But they belong at the render boundary,
-computed by the server from the analyzed grid. The komposition layer, and the conversational
-LLM sitting above it, should not speak in milliseconds unless forced to.
+Exact milliseconds may be present in API responses, but they belong at the render boundary.
+The komposition layer, and the conversational LLM sitting above it, should not speak in
+milliseconds unless forced to.
 
 ### The anti-pattern: precomputing milliseconds
 
@@ -122,45 +121,11 @@ This is implemented, and it has a dedicated construct: **`## Overlay Segments`**
 simultaneously, authored **entirely in beats** — `startBeat`, `durationBeats`, per-track
 `sourceBeat`, and a `transition` with `inDurationBeats` / `outDurationBeats`.
 
-The opposed filter sweep is part of it, but it is **opt-in**: set the transition's `eqKill`
-to `bass_swap` and it is generated for you — the outgoing track gets a descending lowpass
-while the incoming track gets a descending highpass, so the incoming song enters on its highs
-exactly as described above. You specify the crossfade in beats; you do not author filters.
-Without `eqKill` you get the volume crossfade only.
-
-The transition is declared once per segment and applies to the **first** track (as outgoing)
-and the **last** track (as incoming). With three or more tracks in one segment, the middle
-ones receive no fade or sweep.
+The optional `eqKill: "bass_swap"` transition setting enables its EQ treatment; omit it for
+volume crossfade only. The full entered format is in [komposition-v3](komposition-v3.md).
 
 Use that construct for a transition rather than overlapping two `## Audio` sections — and do
 not cover the crossfade zone in both, or the audio double-plays.
-
-## Video segments stretch to their target length
-
-Source clips vary in length — say 10 to 30 seconds — and are stretched to fit the bar count
-they occupy. The bar count is the fixed thing; the clip accommodates it.
-
-A segment may instead be covered by a still image, or by a Remotion-provided sequence
-(`source-generated` in V1/V2, `{file:remotion:...}` in V3).
-
-This is implemented, not aspirational: a V3 clip whose source duration differs from its
-timeline duration is time-stretched to fill the slot — video by rescaling presentation
-timestamps, audio via rubberband. See
-[komposition-v3 § Duration constraints](komposition-v3.md). State the bar span you want and
-let the clip accommodate it rather than pre-trimming sources to length.
-
-## Music rendering is a separate step from video layering
-
-Rendering the music is its own stage: it produces an audio file — `.flac` or `.mp3`, the
-format is not settled — and it is a **separate cache boundary** from the ffmpeg video
-layering that follows.
-
-This separation is part of the model. **It is not documented in this client** — the job
-contract described in [video-build-workflow](video-build-workflow.md) exposes a single
-`video_build` type, and whether a separately addressable audio-render stage exists on the
-server has not been verified from here. Treat that as a gap in this documentation rather than
-as evidence the stage does not exist, and do not build against a separate audio-render job
-until its contract is confirmed.
 
 ## The schema is the contract
 
@@ -199,21 +164,18 @@ Before writing a single line of komposition markdown:
 
 | Intent | Where it is expressed |
 |---|---|
-| Video or audio segment stretched to its target length | **Supported.** V3 time-stretches any clip whose source duration differs from its timeline duration — see [komposition-v3](komposition-v3.md). |
 | Master BPM different from a source's native BPM, system reconciles | **Supported in Overlay Segments** via `strategy: "C_STRETCH"` + `sourceBpm`. The plain `## Audio` track format has a single global BPM and no per-track native tempo. |
 | Two or more songs playing at once | **Supported.** The `## Overlay Segments` construct, authored in beats. |
-| DJ crossfade with opposed highpass/lowpass sweeps | **Supported, opt-in.** Specify the crossfade in beats and set the transition's `eqKill` to `bass_swap`; the sweep is generated for you. Without it you get the volume crossfade only. |
-| Reference a source by segment name rather than by timestamp | **Supported.** `{source:Alias:segment}` in markdown, and `sourceSegmentId` on an Overlay Segment track, resolved against the source's analyzed downbeat grid. Not yet documented in this client — see [sources-workflow](sources-workflow.md). |
+| DJ crossfade | **Supported in Overlay Segments.** Set `eqKill: "bass_swap"` for its optional EQ treatment; omit it for a volume crossfade only. |
 | `bars` as a literal unit token in a document | **Not a unit token.** Positions and lengths are written in `beats`. Think in bars, author beats. |
 | Gradual master-tempo ramp | **Not supported at this stage.** Illustrative only — do not author it. |
-| Separate music-render stage and cache boundary | **Not documented in this client.** The public job contract here exposes `video_build`; whether a separate audio-render stage exists server-side has not been checked from here. |
 
 > **A caution about every row above that says "not".** This repo is a client, and it is
 > demonstrably behind the server — several capabilities in this table were documented here as
 > impossible while being fully implemented. **Absence of syntax in this client's docs is not
 > evidence of absence in the API.** Before telling a user something cannot be done, check the
-> tools manifest and the server's own parser guidance; "I cannot find it documented" is a
-> claim you can support, "the platform does not do it" usually is not.
+> tools manifest; "I cannot find it documented" is a claim you can support, "the platform
+> does not do it" usually is not.
 
 Where something genuinely is not available, say so as a limitation. Do not simulate it by
 precomputing milliseconds — that produces a document that builds, drifts, and gives nobody a
