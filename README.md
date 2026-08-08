@@ -37,13 +37,14 @@ bun src/cli.ts tools                # Fetch the public API tools manifest
 bun src/cli.ts auth/status
 bun src/cli.ts init                # Fetch discovery and write AGENTS.md
 bun src/cli.ts komposition-template my-video.kompo.md  # Write a local skeleton
+bun src/cli.ts sources             # List reusable kilder after login
 ```
 
 `health` reports API availability and KCP discovery as separate summaries. It exits non-zero when the API itself is unavailable; a degraded KCP summary means discovery is incomplete, but the service may still be partly functional. `tools` and `init` are public bootstrap operations; an HTTP 401 from `/api/tools` is a deployment contract failure, not a prompt to paste credentials into a command.
 
 `kli init` fetches the knowledge manifest and the API tools manifest, checks auth status, and writes an agent-readable `AGENTS.md` project context file in the current directory. If any discovery step fails — the tools manifest, the knowledge manifest, or a manifest with 0 units — `kli init` exits non-zero and writes no file; pass `--allow-partial` to write the context file anyway with a prominent warning banner marking it incomplete.
 
-`komposition-template` creates a local V1/V2 starting point only; replace its placeholder file IDs with your uploaded media IDs before loading it. For the exact format, use [komposition-format](docs/kcp/komposition-format.md) or [komposition-v3](docs/kcp/komposition-v3.md).
+`komposition-template` creates a local V1/V2 starting point only; replace its placeholder file IDs with your uploaded media IDs before loading it. `upload-analyze` confirms that analysis was queued; use `media-analysis/<fileId>` to inspect BPM and beat-grid completion. For the exact format, use [komposition-format](docs/kcp/komposition-format.md) or [komposition-v3](docs/kcp/komposition-v3.md).
 
 Full zero-to-first-video walkthrough: [docs/kcp/getting-started.md](docs/kcp/getting-started.md) — also served at https://agent.kompo.se/docs/kcp/getting-started.md.
 

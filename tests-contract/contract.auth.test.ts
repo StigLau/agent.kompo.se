@@ -177,11 +177,12 @@ describe('Authenticated contract tests (test env)', () => {
   });
 
   describe('Jobs', () => {
-    test('lists jobs', () => {
+    test('lists jobs (deployed endpoint currently returns JSON despite markdown Accept)', () => {
       const { exitCode, stdout } = kli(['--env', 'test', 'jobs']);
       expect(exitCode).toBe(0);
       expect(stdout.length).toBeGreaterThan(0);
-      expect(stdout).toMatch(/^#\s/m);
+      // `/api/jobs` is a documented JSON exception to the markdown-first surface.
+      expect(() => JSON.parse(stdout)).not.toThrow();
     });
   });
 

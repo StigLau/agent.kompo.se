@@ -18,7 +18,15 @@ of analysis.
 - `name` is extracted from the first H1 header
 - Includes `fileReferences` JSON array with a fallback chain
 
-## Endpoints
+## KLI
+
+List the kilder available to your authenticated user:
+
+```bash
+kli sources
+```
+
+### Endpoints
 
 ### List kilder
 

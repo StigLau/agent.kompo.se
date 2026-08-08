@@ -66,28 +66,15 @@ export async function handleUploadAnalyze(
   }
   const analysisQueued = completeData.analysisStatus === 'queued';
 
-  // Step 4: poll for the public analysis-job marker (allow up to 20s)
-  let analysisJob: any = null;
-  for (let i = 0; i < 5 && !analysisJob?.jobId; i++) {
-    await new Promise(r => setTimeout(r, 4000));
-    const res = await fetch(`${apiUrl}/api/multimedia/${fileId}/analysis`, {
-      headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
-    }).catch(() => null);
-    const aData = res ? await res.json().catch(() => null) : null;
-    analysisJob = aData?.analysisJob ?? null;
-  }
-
   console.log('# upload-analyze');
   console.log('');
   console.log(`- fileId: ${fileId}`);
   console.log(`- analysisStatus (response): ${completeData.analysisStatus ?? 'not set'}`);
-  console.log(`- analysisJob.jobId: ${analysisJob?.jobId ?? 'MISSING'}`);
-  console.log(`- result: ${analysisJob?.jobId ? 'PASS' : 'FAIL'}`);
+  console.log(`- result: ${analysisQueued ? 'PASS' : 'FAIL'}`);
+  console.log(`- Next: kli media-analysis/${fileId}`);
 
-  if (!analysisQueued || !analysisJob?.jobId) {
-    console.error(
-      '\nupload-analyze FAILED — analysis job was not confirmed after upload',
-    );
+  if (!analysisQueued) {
+    console.error('\nupload-analyze FAILED — the upload response did not confirm queued analysis.');
     process.exit(1);
   }
 }

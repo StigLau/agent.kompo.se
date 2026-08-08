@@ -81,6 +81,7 @@ Commands:
   Kompositions:
     kompositions             List all kompositions
     kompositions/<id>        Get a specific komposition
+    sources                  List reusable kilder (source assets)
 
   Workstate:
     workstate                Show current Muse Workbench workstate
@@ -96,7 +97,8 @@ Commands:
     promote/<id[,id2]>       Promote staging files to library
 
   Media:
-    upload-analyze <path>    Upload an audio file for analysis (BPM, MusicDNA)
+    upload-analyze <path>    Upload an audio file and queue analysis
+    media-analysis/<fileId>  Read BPM and beat-grid analysis for uploaded audio
     upload-media <path>      Upload a video or image file to the media library
 
   Jobs:
@@ -147,7 +149,7 @@ export function isKnownCommand(command: string): boolean {
     // Public
     'init', 'komposition-template', 'health', 'tools', 'incident-download', 'incident-replay',
     // Authenticated exact
-    'kompositions', 'jobs', 'library', 'staging',
+    'kompositions', 'sources', 'jobs', 'library', 'staging',
     'outputs', 'productions',
     'workstate', 'workstate/show', 'workstate/clear',
     'workstate/load-file', 'workstate/render', 'workstate/render-qc',
@@ -168,6 +170,7 @@ export function isKnownCommand(command: string): boolean {
     'productions/',
     'production-stream/',
     'upload-analyze',
+    'media-analysis/',
     'upload-media',
   ];
 
@@ -359,6 +362,9 @@ async function main() {
   } else if (command === 'kompositions') {
     const { handleKompositions } = await import('./commands/kompositions');
     await handleKompositions(apiUrl, token);
+  } else if (command === 'sources') {
+    const { handleSources } = await import('./commands/sources');
+    await handleSources(apiUrl, token);
   } else if (command.startsWith('kompositions/')) {
     const { handleKompositionById } = await import('./commands/kompositions');
     const id = command.split('/')[1];
@@ -458,6 +464,14 @@ async function main() {
   } else if (command === 'incidents') {
     const { handleIncidents } = await import('./commands/incidents');
     await handleIncidents(apiUrl, token);
+  } else if (command.startsWith('media-analysis/')) {
+    const { handleMediaAnalysis } = await import('./commands/analysis');
+    const fileId = command.split('/').slice(1).join('/');
+    if (!fileId) {
+      console.error('Usage: kli media-analysis/<fileId>');
+      process.exit(1);
+    }
+    await handleMediaAnalysis(apiUrl, token, fileId);
   } else if (command.startsWith('upload-analyze')) {
     const { handleUploadAnalyze } = await import('./commands/media');
     const filePath = cmdArgs[0];

@@ -93,8 +93,8 @@ Supported formats: WAV, MP3, FLAC, AAC, OGG, M4A. Expected output shape:
 
 - fileId: <id>
 - analysisStatus (response): queued
-- analysisJob.jobId: <job-id>
 - result: PASS
+- Next: kli media-analysis/<fileId>
 ```
 
 Capture the `fileId` — you need it to reference this audio in your komposition.

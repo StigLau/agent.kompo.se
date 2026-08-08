@@ -42,6 +42,7 @@ describe('isKnownCommand', () => {
     expect(isKnownCommand('staging')).toBe(true);
     expect(isKnownCommand('outputs')).toBe(true);
     expect(isKnownCommand('productions')).toBe(true);
+    expect(isKnownCommand('sources')).toBe(true);
     expect(isKnownCommand('incidents')).toBe(true);
   });
 
@@ -75,6 +76,7 @@ describe('isKnownCommand', () => {
     expect(isKnownCommand('productions/by-komposition/xyz')).toBe(true);
     expect(isKnownCommand('production-stream/abc')).toBe(true);
     expect(isKnownCommand('upload-analyze')).toBe(true);
+    expect(isKnownCommand('media-analysis/file-123')).toBe(true);
   });
 
   // Unknown commands
