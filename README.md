@@ -79,6 +79,15 @@ bun run contract:public  # No credentials required — health, tools, env checks
 bun run contract:auth    # Authenticated gate — refuses to pass without valid tokens
 ```
 
+**Account access check** verifies the public discovery surface plus read-only authenticated
+commands against both production and test. It never writes data or stores credentials:
+
+```bash
+bun run verify:access -- --public-only  # Public health + tools only
+bun run verify:access -- --require-producer  # Also require login and a producer-capable role
+# Equivalent: make verify-access ARGS='--public-only'
+```
+
 Contract tests run against a non-production environment and need a maintainer account — see [`tests-contract/README.md`](tests-contract/README.md).
 
 ## For LLM agents

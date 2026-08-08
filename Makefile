@@ -1,4 +1,4 @@
-.PHONY: help kli init auth-url auth-status health tools contract-public contract-auth first-video
+.PHONY: help kli init auth-url auth-status health tools verify-access contract-public contract-auth first-video
 
 # Public end-user shortcuts. Backend deployment and operational targets deliberately
 # do not belong in this repository; see `kli help` for the full client command set.
@@ -14,6 +14,7 @@ help:
 	@echo "  make auth-status ENV=test            Show login status"
 	@echo "  make health ENV=test                 Check API and discovery"
 	@echo "  make tools ENV=test                  Fetch the public tools manifest"
+	@echo "  make verify-access ARGS='--public-only'  Verify public/authenticated KLI access"
 	@echo "  make contract-public                 Run public deployed contract tests"
 	@echo "  make contract-auth                   Run read-only authenticated contract tests"
 	@echo "  make first-video                     Run the mutating first-video scenario"
@@ -35,6 +36,9 @@ health:
 
 tools:
 	@bun src/cli.ts --env $(ENV) tools
+
+verify-access:
+	@bun scripts/verify-access.ts $(ARGS)
 
 contract-public:
 	@bun run contract:public
