@@ -19,6 +19,11 @@ function invitationRole(data: any): string {
   return invitation.target_role || invitation.targetRole || 'unknown';
 }
 
+export type InvitationFetcher = (
+  url: string,
+  opts?: { method?: string; token?: string; body?: string; timeout?: number },
+) => Promise<any>;
+
 /**
  * Inspect an invitation first. Claiming requires an explicit --confirm flag so
  * the command never changes an account merely because a link was pasted.
@@ -28,6 +33,7 @@ export async function handleInvitationClaim(
   token: string,
   invitationUrl: string,
   confirm: boolean,
+  fetcher: InvitationFetcher = jsonFetch,
 ): Promise<void> {
   const invitationId = extractInvitationId(invitationUrl);
   if (!invitationId) {
@@ -35,7 +41,7 @@ export async function handleInvitationClaim(
   }
 
   const base = `${apiUrl}/api/invitations/${encodeURIComponent(invitationId)}`;
-  const details = await jsonFetch(base, { token });
+  const details = await fetcher(base, { token });
   const role = invitationRole(details);
 
   if (!confirm) {
@@ -47,7 +53,7 @@ export async function handleInvitationClaim(
     return;
   }
 
-  const result = await jsonFetch(`${base}/claim`, { method: 'POST', token });
+  const result = await fetcher(`${base}/claim`, { method: 'POST', token });
   console.log('# Invitation claimed');
   console.log('');
   console.log(`- role: ${result?.role || role}`);

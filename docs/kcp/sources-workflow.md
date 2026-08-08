@@ -13,7 +13,7 @@ of analysis.
 ## Key differences from regular kompositions
 
 - **contentType** is `"source-audio"`, `"source-video"`, or `"source-image"`
-- Status is always `"complete"` (no build pipeline)
+- `status` may be `"complete"`, `"draft"`, or omitted; treat it as descriptive metadata
 - `content` is **REQUIRED** (never null) — contains a strict markdown structure
 - `name` is extracted from the first H1 header
 - Includes `fileReferences` JSON array with a fallback chain
@@ -26,7 +26,7 @@ List the kilder available to your authenticated user:
 kli sources
 ```
 
-### Endpoints
+## Endpoints
 
 ### List kilder
 
@@ -46,7 +46,7 @@ Response:
       "contentType": "source-video",
       "content": "# Hesnes Islands Footage\n\n## Metadata\n- Type: video\n- BPM: 125\n\n## Segments\n- **intro** (0:00-0:15): Opening shot\n\n## File Locations\n1. library:{file:abc123}\n2. https://youtube.com/...",
       "fileReferences": "[{\"type\":\"library\",\"fileId\":\"abc123\",\"priority\":1},{\"type\":\"youtube\",\"url\":\"https://...\",\"priority\":2}]",
-      "status": "complete",
+      "status": "draft",
       "createdAt": "2025-01-05T12:00:00Z",
       "updatedAt": "2025-01-05T12:00:00Z"
     }
