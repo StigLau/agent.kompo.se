@@ -60,6 +60,9 @@ bun src/cli.ts auth/url                         # Print a login URL
 # Open the URL in a browser and log in.
 # After login, copy the full address-bar URL.
 bun src/cli.ts auth/complete "<callback-url>"   # Paste the callback URL
+# If you enrolled through an invitation link, inspect it first and accept deliberately:
+bun src/cli.ts auth/claim-invitation "<enrollment-url>"
+bun src/cli.ts auth/claim-invitation "<enrollment-url>" --confirm
 ```
 
 Tokens are stored in `~/.kompo/auth-<env>.json` with permission `0600`. Run `bun src/cli.ts auth/status` to check current login state and token expiry.

@@ -75,6 +75,8 @@ Commands:
     auth/complete <url>      Complete login by pasting the full callback URL
     auth/refresh             Refresh stored tokens
     auth/status              Show current auth identity and token expiry
+    auth/claim-invitation <enrollment-url> [--confirm]
+                             Inspect an invitation; pass --confirm to accept it.
 
   Kompositions:
     kompositions             List all kompositions
@@ -141,7 +143,7 @@ export function isKnownCommand(command: string): boolean {
   const exactCommands = new Set([
     'help',
     // Auth
-    'auth/url', 'auth/complete', 'auth/refresh', 'auth/status',
+    'auth/url', 'auth/complete', 'auth/refresh', 'auth/status', 'auth/claim-invitation',
     // Public
     'init', 'komposition-template', 'health', 'tools', 'incident-download', 'incident-replay',
     // Authenticated exact
@@ -341,7 +343,20 @@ async function main() {
   // Command dispatch
   // -----------------------------------------------------------------------
 
-  if (command === 'kompositions') {
+  if (command === 'auth/claim-invitation') {
+    const { handleInvitationClaim } = await import('./commands/invitations');
+    const invitationUrl = cmdArgs.find(arg => arg !== '--confirm');
+    if (!invitationUrl) {
+      console.error('Usage: kli auth/claim-invitation <enrollment-url> [--confirm]');
+      process.exit(1);
+    }
+    try {
+      await handleInvitationClaim(apiUrl, token, invitationUrl, cmdArgs.includes('--confirm'));
+    } catch (err: any) {
+      console.error(err.message);
+      process.exit(1);
+    }
+  } else if (command === 'kompositions') {
     const { handleKompositions } = await import('./commands/kompositions');
     await handleKompositions(apiUrl, token);
   } else if (command.startsWith('kompositions/')) {

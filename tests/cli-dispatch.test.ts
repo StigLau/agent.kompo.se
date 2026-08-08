@@ -20,6 +20,7 @@ describe('isKnownCommand', () => {
     expect(isKnownCommand('auth/complete')).toBe(true);
     expect(isKnownCommand('auth/refresh')).toBe(true);
     expect(isKnownCommand('auth/status')).toBe(true);
+    expect(isKnownCommand('auth/claim-invitation')).toBe(true);
   });
 
   // Public commands
