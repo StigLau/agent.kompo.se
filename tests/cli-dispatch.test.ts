@@ -25,6 +25,7 @@ describe('isKnownCommand', () => {
   // Public commands
   test('public commands are known', () => {
     expect(isKnownCommand('init')).toBe(true);
+    expect(isKnownCommand('komposition-template')).toBe(true);
     expect(isKnownCommand('health')).toBe(true);
     expect(isKnownCommand('tools')).toBe(true);
     expect(isKnownCommand('incident-download')).toBe(true);

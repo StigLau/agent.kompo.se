@@ -19,6 +19,7 @@
     "registry": "https://registry.npmjs.org/"
   },
   "scripts": {
+    "kli": "bun src/cli.ts",
     "test": "bun test tests/",
     "scenario:first-video": "bun scenarios/first-video/run.ts",
     "test:contract": "bun test tests-contract/",

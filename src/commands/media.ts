@@ -66,7 +66,7 @@ export async function handleUploadAnalyze(
   }
   const analysisQueued = completeData.analysisStatus === 'queued';
 
-  // Step 4: poll for analysisJob DDB marker (fire-and-forget — allow up to 20s)
+  // Step 4: poll for the public analysis-job marker (allow up to 20s)
   let analysisJob: any = null;
   for (let i = 0; i < 5 && !analysisJob?.jobId; i++) {
     await new Promise(r => setTimeout(r, 4000));
@@ -86,7 +86,7 @@ export async function handleUploadAnalyze(
 
   if (!analysisQueued || !analysisJob?.jobId) {
     console.error(
-      '\nupload-analyze FAILED — analysisJob marker not written to DynamoDB after upload',
+      '\nupload-analyze FAILED — analysis job was not confirmed after upload',
     );
     process.exit(1);
   }

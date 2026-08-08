@@ -67,6 +67,8 @@ Commands:
                              Fails closed if discovery is incomplete. Use --allow-partial to
                              write a clearly-marked partial context instead. --manifest accepts
                              a local knowledge.yaml path or an http(s) URL.
+    komposition-template <path>
+                             Write a local V1/V2 komposition skeleton. It never overwrites a file.
 
   Auth:
     auth/url                 Generate a PKCE login URL (entry point for first-time users)
@@ -141,7 +143,7 @@ export function isKnownCommand(command: string): boolean {
     // Auth
     'auth/url', 'auth/complete', 'auth/refresh', 'auth/status',
     // Public
-    'init', 'health', 'tools', 'incident-download', 'incident-replay',
+    'init', 'komposition-template', 'health', 'tools', 'incident-download', 'incident-replay',
     // Authenticated exact
     'kompositions', 'jobs', 'library', 'staging',
     'outputs', 'productions',
@@ -264,6 +266,21 @@ async function main() {
     const force = cmdArgs.includes('--force');
     const allowPartial = cmdArgs.includes('--allow-partial');
     await handleInit(env, apiUrl, force, allowPartial, manifestSource);
+    return;
+  }
+  if (command === 'komposition-template') {
+    const { handleKompositionTemplate } = await import('./commands/komposition');
+    const filePath = cmdArgs[0];
+    if (!filePath) {
+      console.error('Usage: kli komposition-template <path-to-.kompo.md>');
+      process.exit(1);
+    }
+    try {
+      handleKompositionTemplate(filePath);
+    } catch (err: any) {
+      console.error(err.message);
+      process.exit(1);
+    }
     return;
   }
   if (command === 'health') {
