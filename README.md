@@ -94,6 +94,20 @@ bun run verify:access -- --require-producer  # Also require login and a producer
 
 Contract tests run against a non-production environment and need a maintainer account — see [`tests-contract/README.md`](tests-contract/README.md).
 
+### Delegated read-only client tests
+
+If [Pi](https://pi.dev) is installed, delegate only the fixed read-only test gates with:
+
+```bash
+make pi-kli-readonly ARGS='Run contract-public, then report pass/fail counts and confidence.'
+```
+
+The delegate has no built-in file or shell tools. It can run only unit tests, public contract
+tests, test-environment read-only access verification, and the default authenticated contract
+tier. It cannot upload, render, promote, claim invitations, inspect credentials, or mutate Git.
+See [`.pi/skills/kli-client-testing/SKILL.md`](.pi/skills/kli-client-testing/SKILL.md) for the
+full allowlist and approval boundary.
+
 ## For LLM agents
 
 `kli init` writes an `AGENTS.md` context file into your project — tools operations, knowledge units, auth status — sourced from the same discovery chain your agent could run itself: fetch [`knowledge.yaml`](knowledge.yaml) for the unit map, follow `path` into `docs/kcp/*.md` for the unit bodies, then fetch the API's own `/api/tools` manifest for typed operations. The same corpus is live at [agent.kompo.se](https://agent.kompo.se) for agents fetching over HTTP instead of from a clone. One thing worth knowing specifically here: the published `@kompo/kli` npm package ships `knowledge.yaml` and `docs/kcp/` inside the tarball, so once installed, an agent has the whole discovery corpus on local disk before making any network call.

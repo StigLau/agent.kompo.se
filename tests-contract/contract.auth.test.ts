@@ -176,6 +176,15 @@ describe('Authenticated contract tests (test env)', () => {
     });
   });
 
+  describe('Sources', () => {
+    test('lists reusable kilder through the KLI sources command', () => {
+      const { exitCode, stdout } = kli(['--env', 'test', 'sources']);
+      expect(exitCode).toBe(0);
+      expect(stdout).toMatch(/^# Sources \(\d+\)$/m);
+      expect(stdout).toContain('| Name | Type | Status | ID |');
+    });
+  });
+
   describe('Jobs', () => {
     test('lists jobs (deployed endpoint currently returns JSON despite markdown Accept)', () => {
       const { exitCode, stdout } = kli(['--env', 'test', 'jobs']);

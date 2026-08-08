@@ -1,4 +1,4 @@
-.PHONY: help kli init auth-url auth-status health tools verify-access contract-public contract-auth first-video
+.PHONY: help kli init auth-url auth-status health tools verify-access contract-public contract-auth pi-kli-readonly first-video
 
 # Public end-user shortcuts. Backend deployment and operational targets deliberately
 # do not belong in this repository; see `kli help` for the full client command set.
@@ -17,6 +17,7 @@ help:
 	@echo "  make verify-access ARGS='--public-only'  Verify public/authenticated KLI access"
 	@echo "  make contract-public                 Run public deployed contract tests"
 	@echo "  make contract-auth                   Run read-only authenticated contract tests"
+	@echo "  make pi-kli-readonly ARGS='...'      Delegate only fixed read-only KLI test gates to Pi"
 	@echo "  make first-video                     Run the mutating first-video scenario"
 
 kli:
@@ -45,6 +46,9 @@ contract-public:
 
 contract-auth:
 	@bun run contract:auth
+
+pi-kli-readonly:
+	@bash scripts/pi-kli-readonly.sh "$(ARGS)"
 
 first-video:
 	@bun run scenario:first-video
