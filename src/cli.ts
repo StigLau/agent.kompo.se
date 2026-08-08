@@ -67,16 +67,21 @@ Commands:
                              Fails closed if discovery is incomplete. Use --allow-partial to
                              write a clearly-marked partial context instead. --manifest accepts
                              a local knowledge.yaml path or an http(s) URL.
+    komposition-template <path>
+                             Write a local V1/V2 komposition skeleton. It never overwrites a file.
 
   Auth:
     auth/url                 Generate a PKCE login URL (entry point for first-time users)
     auth/complete <url>      Complete login by pasting the full callback URL
     auth/refresh             Refresh stored tokens
     auth/status              Show current auth identity and token expiry
+    auth/claim-invitation <enrollment-url> [--confirm]
+                             Inspect an invitation; pass --confirm to accept it.
 
   Kompositions:
     kompositions             List all kompositions
     kompositions/<id>        Get a specific komposition
+    sources                  List reusable kilder (source assets)
 
   Workstate:
     workstate                Show current Muse Workbench workstate
@@ -92,7 +97,8 @@ Commands:
     promote/<id[,id2]>       Promote staging files to library
 
   Media:
-    upload-analyze <path>    Upload an audio file for analysis (BPM, MusicDNA)
+    upload-analyze <path>    Upload an audio file and queue analysis
+    media-analysis/<fileId>  Read BPM and beat-grid analysis for uploaded audio
     upload-media <path>      Upload a video or image file to the media library
 
   Jobs:
@@ -139,11 +145,11 @@ export function isKnownCommand(command: string): boolean {
   const exactCommands = new Set([
     'help',
     // Auth
-    'auth/url', 'auth/complete', 'auth/refresh', 'auth/status',
+    'auth/url', 'auth/complete', 'auth/refresh', 'auth/status', 'auth/claim-invitation',
     // Public
-    'init', 'health', 'tools', 'incident-download', 'incident-replay',
+    'init', 'komposition-template', 'health', 'tools', 'incident-download', 'incident-replay',
     // Authenticated exact
-    'kompositions', 'jobs', 'library', 'staging',
+    'kompositions', 'sources', 'jobs', 'library', 'staging',
     'outputs', 'productions',
     'workstate', 'workstate/show', 'workstate/clear',
     'workstate/load-file', 'workstate/render', 'workstate/render-qc',
@@ -164,6 +170,7 @@ export function isKnownCommand(command: string): boolean {
     'productions/',
     'production-stream/',
     'upload-analyze',
+    'media-analysis/',
     'upload-media',
   ];
 
@@ -266,6 +273,21 @@ async function main() {
     await handleInit(env, apiUrl, force, allowPartial, manifestSource);
     return;
   }
+  if (command === 'komposition-template') {
+    const { handleKompositionTemplate } = await import('./commands/komposition');
+    const filePath = cmdArgs[0];
+    if (!filePath) {
+      console.error('Usage: kli komposition-template <path-to-.kompo.md>');
+      process.exit(1);
+    }
+    try {
+      handleKompositionTemplate(filePath);
+    } catch (err: any) {
+      console.error(err.message);
+      process.exit(1);
+    }
+    return;
+  }
   if (command === 'health') {
     const { handleHealth } = await import('./commands/system');
     await handleHealth(env, apiUrl);
@@ -324,9 +346,25 @@ async function main() {
   // Command dispatch
   // -----------------------------------------------------------------------
 
-  if (command === 'kompositions') {
+  if (command === 'auth/claim-invitation') {
+    const { handleInvitationClaim } = await import('./commands/invitations');
+    const invitationUrl = cmdArgs.find(arg => arg !== '--confirm');
+    if (!invitationUrl) {
+      console.error('Usage: kli auth/claim-invitation <enrollment-url> [--confirm]');
+      process.exit(1);
+    }
+    try {
+      await handleInvitationClaim(apiUrl, token, invitationUrl, cmdArgs.includes('--confirm'));
+    } catch (err: any) {
+      console.error(err.message);
+      process.exit(1);
+    }
+  } else if (command === 'kompositions') {
     const { handleKompositions } = await import('./commands/kompositions');
     await handleKompositions(apiUrl, token);
+  } else if (command === 'sources') {
+    const { handleSources } = await import('./commands/sources');
+    await handleSources(apiUrl, token);
   } else if (command.startsWith('kompositions/')) {
     const { handleKompositionById } = await import('./commands/kompositions');
     const id = command.split('/')[1];
@@ -426,6 +464,14 @@ async function main() {
   } else if (command === 'incidents') {
     const { handleIncidents } = await import('./commands/incidents');
     await handleIncidents(apiUrl, token);
+  } else if (command.startsWith('media-analysis/')) {
+    const { handleMediaAnalysis } = await import('./commands/analysis');
+    const fileId = command.split('/').slice(1).join('/');
+    if (!fileId) {
+      console.error('Usage: kli media-analysis/<fileId>');
+      process.exit(1);
+    }
+    await handleMediaAnalysis(apiUrl, token, fileId);
   } else if (command.startsWith('upload-analyze')) {
     const { handleUploadAnalyze } = await import('./commands/media');
     const filePath = cmdArgs[0];

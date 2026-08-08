@@ -6,7 +6,16 @@ obtained through AWS Cognito.
 ## Account access
 
 Kompo.ai accounts are **invitation-only**. An existing user must invite you before you can
-create an account.
+create an account. Open the enrollment URL in a browser to create or sign in to your account,
+then use KLI to inspect and deliberately accept it:
+
+```bash
+kli auth/claim-invitation "<enrollment-url>"
+kli auth/claim-invitation "<enrollment-url>" --confirm
+```
+
+The first command makes no change. `--confirm` accepts the invitation for the authenticated
+user; the server rejects an invitation created by that same user.
 
 ## Roles
 

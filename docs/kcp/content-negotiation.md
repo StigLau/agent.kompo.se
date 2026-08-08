@@ -9,7 +9,8 @@ Accept: text/markdown
 
 ## Supported endpoints
 
-All `GET` endpoints and `POST /api/multimedia/chat` support `Accept: text/markdown`:
+Markdown negotiation is endpoint-specific. These endpoints are verified to return formatted
+markdown for `Accept: text/markdown`:
 
 | Endpoint | Markdown response |
 |----------|-------------------|
@@ -19,6 +20,10 @@ All `GET` endpoints and `POST /api/multimedia/chat` support `Accept: text/markdo
 | `GET /api/outputs` | Output listing as formatted markdown |
 | `POST /api/multimedia/chat` | Chat response as markdown |
 | `GET /api/multimedia/staging` | Staging file listing as markdown |
+
+Some endpoints return JSON even when markdown is requested. In particular, deployed
+`GET /api/jobs` currently returns JSON; consumers must accept that documented live behavior
+rather than assume every `GET` endpoint negotiates markdown.
 
 ## Response headers
 

@@ -24,7 +24,9 @@ cd agent.kompo.se
 bun install
 ```
 
-Bun is the only supported runtime. The CLI entry point is `src/cli.ts` — run it directly with `bun src/cli.ts <command>`. (When published, the binary name will be `kli`.)
+Bun is the only supported runtime. The CLI entry point is `src/cli.ts` — run it directly with `bun src/cli.ts <command>`, or use `bun run kli -- <command>`. (When published, the binary name will be `kli`.)
+
+A small public `Makefile` provides the same safe shortcuts (`make help`). It deliberately contains no server deployment or operator commands.
 
 ### First commands (no login needed when public discovery is healthy)
 
@@ -34,11 +36,15 @@ bun src/cli.ts health               # Check API health and KCP discovery
 bun src/cli.ts tools                # Fetch the public API tools manifest
 bun src/cli.ts auth/status
 bun src/cli.ts init                # Fetch discovery and write AGENTS.md
+bun src/cli.ts komposition-template my-video.kompo.md  # Write a local skeleton
+bun src/cli.ts sources             # List reusable kilder after login
 ```
 
 `health` reports API availability and KCP discovery as separate summaries. It exits non-zero when the API itself is unavailable; a degraded KCP summary means discovery is incomplete, but the service may still be partly functional. `tools` and `init` are public bootstrap operations; an HTTP 401 from `/api/tools` is a deployment contract failure, not a prompt to paste credentials into a command.
 
 `kli init` fetches the knowledge manifest and the API tools manifest, checks auth status, and writes an agent-readable `AGENTS.md` project context file in the current directory. If any discovery step fails — the tools manifest, the knowledge manifest, or a manifest with 0 units — `kli init` exits non-zero and writes no file; pass `--allow-partial` to write the context file anyway with a prominent warning banner marking it incomplete.
+
+`komposition-template` creates a local V1/V2 starting point only; replace its placeholder file IDs with your uploaded media IDs before loading it. `upload-analyze` confirms that analysis was queued; use `media-analysis/<fileId>` to inspect BPM and beat-grid completion. For the exact format, use [komposition-format](docs/kcp/komposition-format.md) or [komposition-v3](docs/kcp/komposition-v3.md).
 
 Full zero-to-first-video walkthrough: [docs/kcp/getting-started.md](docs/kcp/getting-started.md) — also served at https://agent.kompo.se/docs/kcp/getting-started.md.
 
@@ -55,6 +61,9 @@ bun src/cli.ts auth/url                         # Print a login URL
 # Open the URL in a browser and log in.
 # After login, copy the full address-bar URL.
 bun src/cli.ts auth/complete "<callback-url>"   # Paste the callback URL
+# If you enrolled through an invitation link, inspect it first and accept deliberately:
+bun src/cli.ts auth/claim-invitation "<enrollment-url>"
+bun src/cli.ts auth/claim-invitation "<enrollment-url>" --confirm
 ```
 
 Tokens are stored in `~/.kompo/auth-<env>.json` with permission `0600`. Run `bun src/cli.ts auth/status` to check current login state and token expiry.
@@ -72,6 +81,15 @@ bun test tests/
 ```bash
 bun run contract:public  # No credentials required — health, tools, env checks
 bun run contract:auth    # Authenticated gate — refuses to pass without valid tokens
+```
+
+**Account access check** verifies the public discovery surface plus read-only authenticated
+commands against both production and test. It never writes data or stores credentials:
+
+```bash
+bun run verify:access -- --public-only  # Public health + tools only
+bun run verify:access -- --require-producer  # Also require login and a producer-capable role
+# Equivalent: make verify-access ARGS='--public-only'
 ```
 
 Contract tests run against a non-production environment and need a maintainer account — see [`tests-contract/README.md`](tests-contract/README.md).

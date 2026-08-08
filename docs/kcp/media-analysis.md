@@ -13,10 +13,17 @@ its output feeds directly into [komposition-format](komposition-format.md) beat 
 ## Trigger analysis
 
 Analysis is submitted automatically when you complete an audio upload via `kli upload-analyze
-<path>` (audio files only — `.mp3`, `.wav`, `.flac`, `.aac`, `.ogg`, `.m4a`). If you upload
-through the raw `POST /api/upload/complete` endpoint directly instead of the CLI shortcut,
-confirm with the response or by polling the analysis endpoint below whether a job was submitted
-automatically for that content type.
+<path>` (audio files only — `.mp3`, `.wav`, `.flac`, `.aac`, `.ogg`, `.m4a`). The command
+confirms that the upload response queued analysis; it does not wait for analysis to finish.
+Inspect progress and the completed beat grid with:
+
+```bash
+kli media-analysis/<fileId>
+```
+
+If you upload through the raw `POST /api/upload/complete` endpoint directly instead of the CLI
+shortcut, confirm with the response or by polling the analysis endpoint below whether analysis
+was submitted automatically for that content type.
 
 ## Poll for results
 

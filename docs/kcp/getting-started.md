@@ -48,7 +48,12 @@ with a prominent warning banner. Pass `--manifest <path-or-url>` to point `init`
 robust move is to authenticate first (step 3) and re-run `init` — treat auth-then-init as
 the reliable order.
 
-## 3. Authenticate (human does this once)
+## 3. Enroll and authenticate (human does this once)
+
+If you received an enrollment URL, open it in a browser first to create or sign in to the
+invited account. Do not put that URL in a project file or commit it.
+
+Then start KLI's PKCE login:
 
 ```bash
 bun src/cli.ts auth/url
@@ -63,7 +68,20 @@ bun src/cli.ts auth/complete "<full-callback-url>"
 ```
 
 Tokens are stored in `~/.kompo/auth-<env>.json`, mode `0600`, and refresh automatically.
+If the enrollment still needs accepting after PKCE login, inspect it first and then explicitly
+confirm the claim:
+
+```bash
+bun src/cli.ts auth/claim-invitation "<enrollment-url>"
+bun src/cli.ts auth/claim-invitation "<enrollment-url>" --confirm
+```
+
 Check `bun src/cli.ts auth/status` at any point to see identity, role(s), and token expiry.
+Verify public and read-only authenticated access before uploading anything:
+
+```bash
+bun run verify:access -- --require-producer
+```
 
 **Role matters for §6-7.** Every authenticated account can upload and analyze audio (§4-5),
 but *composing* a komposition (§6-7) additionally requires **producer** role. Role is set by
@@ -93,8 +111,8 @@ Supported formats: WAV, MP3, FLAC, AAC, OGG, M4A. Expected output shape:
 
 - fileId: <id>
 - analysisStatus (response): queued
-- analysisJob.jobId: <job-id>
 - result: PASS
+- Next: kli media-analysis/<fileId>
 ```
 
 Capture the `fileId` — you need it to reference this audio in your komposition.
