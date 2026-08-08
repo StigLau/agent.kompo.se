@@ -1,7 +1,6 @@
 ---
 name: kli-client-testing
 description: Run or delegate safe read-only KLI client tests in this public repository. Use when validating CLI behavior, public/authenticated read contracts, or Pi delegation without uploads, renders, invitation claims, or production mutations.
-allowed-tools: read grep find ls bash
 ---
 
 # KLI client testing

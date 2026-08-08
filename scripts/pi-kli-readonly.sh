@@ -12,6 +12,8 @@ exec pi \
   --model deepseek-v4-flash-free \
   --no-session \
   --approve \
+  --no-extensions \
+  --no-skills \
   --no-builtin-tools \
   --extension .pi/extensions/kli-readonly-test/index.ts \
   --print "$*" \

@@ -19,7 +19,9 @@ function redact(output: string): string {
     .replace(/^(- identity:).*$/gim, '$1 [REDACTED]')
     .replace(/(Authorization:\s*Bearer\s+)\S+/gi, '$1[REDACTED]')
     .replace(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, '[REDACTED_EMAIL]')
-    .replace(/\b((?:id_token|access_token|refresh_token)\b\s*[:=])\s*[^\s,]+/gi, '$1 [REDACTED]');
+    .replace(/([?&](?:id_token|access_token|refresh_token|token)=)[^&\s]+/gi, '$1[REDACTED]')
+    .replace(/(["']?(?:id_token|access_token|refresh_token|token)["']?\s*[:=]\s*["']?)[^"'\s,}&]+/gi, '$1[REDACTED]')
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, '[REDACTED_JWT]');
 }
 
 export default function (pi: ExtensionAPI) {
@@ -40,16 +42,15 @@ export default function (pi: ExtensionAPI) {
       if (signal?.aborted) throw new Error('Cancelled before test execution.');
       const action = params.action as Action;
       const [command, ...args] = ACTIONS[action];
+      const env = { ...process.env };
+      delete env.KOMPO_CONTRACT_MUTATING;
+      delete env.KOMPO_CONTRACT_FULL;
+      delete env.KOMPO_CONTRACT_KOMPOSITION_FILE;
       const result = spawnSync(command, args, {
         cwd: ctx.cwd,
         encoding: 'utf8',
         timeout: 180_000,
-        env: {
-          ...process.env,
-          KOMPO_CONTRACT_MUTATING: undefined,
-          KOMPO_CONTRACT_FULL: undefined,
-          KOMPO_CONTRACT_KOMPOSITION_FILE: undefined,
-        },
+        env,
       });
       const combined = redact(`${result.stdout ?? ''}${result.stderr ?? ''}`);
       const truncated = truncateTail(combined, { maxBytes: 20_000, maxLines: 500 });
@@ -61,7 +62,11 @@ export default function (pi: ExtensionAPI) {
           type: 'text',
           text: `Command: ${[command, ...args].join(' ')}\nExit status: ${result.status ?? 1}\n\n${truncated.content}${suffix}`,
         }],
-        details: { action, exitCode: result.status ?? 1, timedOut: result.error?.name === 'Error' },
+        details: {
+          action,
+          exitCode: result.status ?? 1,
+          timedOut: (result.error as { code?: string } | undefined)?.code === 'ETIMEDOUT',
+        },
       };
     },
   });
