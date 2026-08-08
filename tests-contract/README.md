@@ -7,7 +7,7 @@ The suite is split into two independent entry points:
 | Script | What it covers | Auth required |
 |---|---|---|
 | `contract:public` | Health, `/api/tools`, bogus-env | No |
-| `contract:auth` | Kompositions, library, jobs, outputs (plus mutating/full tiers) | Yes |
+| `contract:auth` | Kompositions, library, sources, jobs, outputs (plus mutating/full tiers) | Yes |
 
 ## Prerequisites
 
@@ -39,7 +39,19 @@ bun run contract:auth
 
 **When credentials are missing or expired, this script exits non-zero and prints "GATE DID NOT RUN"** with the reason. Silent green skips are removed — a missing-credentials result is deliberately noisy so it cannot be mistaken for full coverage.
 
-When auth is present, all read-only tests (kompositions, library, jobs, outputs) run unconditionally.
+When auth is present, all read-only tests (kompositions, library, sources, jobs, outputs) run unconditionally.
+
+### Delegated read-only gate
+
+If Pi is installed, use the project launcher for a delegate that can invoke only fixed
+read-only gates — not arbitrary shell commands:
+
+```bash
+make pi-kli-readonly ARGS='Run contract-public and verify-test. Report exit status and pass/fail counts.'
+```
+
+The controller must independently rerun and interpret any result used for a decision. See
+[the project Pi skill](../.pi/skills/kli-client-testing/SKILL.md) for its exact allowlist.
 
 ### Mutating tier (creates real data)
 
